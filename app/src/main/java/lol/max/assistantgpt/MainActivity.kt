@@ -2,6 +2,8 @@ package lol.max.assistantgpt
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -61,11 +63,25 @@ import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
+import java.util.Random
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        var ttsInit = false
+        val tts = TextToSpeech(
+            this
+        ) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.i(getString(R.string.app_name), "TTS initialized")
+                ttsInit = true
+            } else
+                Log.e(getString(R.string.app_name), "TTS failed to initialize")
+        }
+
+
+        val random = Random()
 
         val viewModel: ChatMessageListViewModel by viewModels()
         lifecycleScope.launch {
@@ -88,13 +104,20 @@ class MainActivity : ComponentActivity() {
                                     viewModel.addMessage(
                                         ChatMessage(
                                             ChatMessageRole.USER.value(),
-                                            input.value
+                                            input.value.trim()
                                         )
                                     )
                                     input.value = ""
                                     thread {
                                         viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages()))
                                         enableButton = true
+                                        if (ttsInit)
+                                            tts.speak(
+                                                viewModel.getMessages()[viewModel.getMessages().size - 1].content,
+                                                TextToSpeech.QUEUE_FLUSH,
+                                                null,
+                                                random.nextInt().toString()
+                                            )
                                     }
                                 }
                             }
