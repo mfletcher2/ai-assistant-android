@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -83,6 +84,9 @@ import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 @Composable
 fun PreviewChatScreen() {
     val input = remember { mutableStateOf("Obmana") }
+    val dialog = remember {
+        mutableStateOf(DialogTypes.NONE)
+    }
     val msgLst = arrayListOf<ChatMessage>()
     msgLst.add(ChatMessage(ChatMessageRole.USER.value(), "Yo waddup bitch"))
     msgLst.add(ChatMessage(ChatMessageRole.ASSISTANT.value(), "Fuck you"))
@@ -109,7 +113,20 @@ fun PreviewChatScreen() {
         { msgLst.add(ChatMessage(ChatMessageRole.USER.value(), input.value)) }
     AssistantGPTTheme {
         Surface {
-            ChatScreen(input, msgLst, onClickSend = onClickSend, onClickVoice = {})
+            ChatScreen(input, msgLst, showDialog = dialog, onClickSend = onClickSend, onClickVoice = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun PreviewOptionsDialog(){
+    AssistantGPTTheme {
+        Surface(Modifier.fillMaxSize()) {
+            val type = remember {
+                mutableStateOf(DialogTypes.SETTINGS)
+            }
+            Dialogs(type = type, Options("gpt-3.5-turbo"))
         }
     }
 }

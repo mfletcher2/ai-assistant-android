@@ -3,6 +3,7 @@ package lol.max.assistantgpt
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -35,18 +36,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -59,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -73,6 +79,9 @@ import java.util.Random
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
+
+    private var prefs: SharedPreferences? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         var ttsInit = false
@@ -87,6 +96,9 @@ class MainActivity : ComponentActivity() {
         }
         val stt = SpeechRecognizer.createSpeechRecognizer(this)
 
+        prefs = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE)
+        val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
+
         val random = Random()
 
         val viewModel: ChatMessageListViewModel by viewModels()
@@ -98,10 +110,11 @@ class MainActivity : ComponentActivity() {
                         AssistantGPTTheme {
                             var enableButton by rememberSaveable { mutableStateOf(true) }
                             var waitingForResponse by rememberSaveable { mutableStateOf(false) }
-                            val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
                             val input = rememberSaveable { mutableStateOf("") }
-                            val showAlertDialog =
-                                rememberSaveable { mutableStateOf(AlertDialogTypes.NONE) }
+                            val showDialog =
+                                rememberSaveable { mutableStateOf(DialogTypes.NONE) }
+                            val options = Options(
+                                model = prefs!!.getString("model", "gpt-3.5-turbo")!!)
 
                             fun sendMessage() {
                                 if (input.value == "") return
@@ -115,7 +128,7 @@ class MainActivity : ComponentActivity() {
                                 )
                                 input.value = ""
                                 thread {
-                                    viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages()))
+                                    viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages(), options.model))
                                     enableButton = true
                                     waitingForResponse = false
                                     if (ttsInit)
@@ -160,9 +173,10 @@ class MainActivity : ComponentActivity() {
                                     viewModel.getMessages(),
                                     enableButton,
                                     waitingForResponse,
+                                    showDialog,
                                     { sendMessage() },
                                     { onClickVoice() })
-                                AlertDialogs(type = showAlertDialog)
+                                Dialogs(type = showDialog, options = options)
                             }
                         }
                     }
@@ -336,6 +350,7 @@ fun ChatScreen(
     msgLst: List<ChatMessage>,
     enableButton: Boolean = true,
     showLoading: Boolean = false,
+    showDialog: MutableState<DialogTypes>,
     onClickSend: () -> Unit,
     onClickVoice: () -> Unit
 ) {
@@ -347,15 +362,34 @@ fun ChatScreen(
                 onClickSend = { onClickSend() },
                 onClickVoice = { onClickVoice() })
         }
+    }, topBar = {
+        TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) },
+            colors = TopAppBarDefaults.smallTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.primaryContainer
+            ), actions = {
+                IconButton(onClick = { showDialog.value = DialogTypes.SETTINGS }) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.primaryContainer
+                    )
+                }
+            })
     }) {
         Box(
             modifier = Modifier
-                .padding(PaddingValues(bottom = it.calculateBottomPadding()))
+                .padding(
+                    PaddingValues(
+                        bottom = it.calculateBottomPadding(),
+                        top = it.calculateTopPadding()
+                    )
+                )
                 .fillMaxSize(), contentAlignment = Alignment.BottomCenter
         ) {
             ChatMessageConversation(
                 chatMessages = msgLst,
-                showLoading = showLoading,
+                showLoading = showLoading
             )
         }
     }

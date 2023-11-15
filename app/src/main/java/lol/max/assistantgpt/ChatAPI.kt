@@ -18,7 +18,6 @@ import java.time.Duration
 
 class ChatAPI(apiKey: String, timeoutSec: Long = 60) {
     private val functionExecutor = FunctionExecutor(listOf())
-//    private val service = OpenAiService(apiKey)
 
     private var mapper: ObjectMapper = defaultObjectMapper()
     private var client: OkHttpClient = defaultClient(apiKey, Duration.ofSeconds(timeoutSec))
@@ -30,13 +29,14 @@ class ChatAPI(apiKey: String, timeoutSec: Long = 60) {
     private var service: OpenAiService = OpenAiService(api)
 
 
-    fun getCompletion(chatMessages: List<ChatMessage>): List<ChatMessage> {
+    fun getCompletion(chatMessages: List<ChatMessage>, model: String = "gpt-3.5-turbo"): List<ChatMessage> {
         val newMessages: ArrayList<ChatMessage> = arrayListOf()
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
             .messages(chatMessages)
-            .model("gpt-3.5-turbo")
+            .model(model)
             .n(1)
+            .temperature(0.5)
             .maxTokens(128)
 //            .functions(functionExecutor)
             .build()
