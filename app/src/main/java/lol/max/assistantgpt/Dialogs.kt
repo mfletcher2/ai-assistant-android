@@ -30,7 +30,7 @@ enum class DialogTypes {
     NONE, SETTINGS
 }
 
-val availableModels = listOf("gpt-3.5-turbo", "gpt-4")
+val availableModels = listOf("gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4")
 
 @Composable
 fun Dialogs(type: MutableState<DialogTypes>, options: Options) {
