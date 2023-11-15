@@ -1,7 +1,13 @@
 package lol.max.assistantgpt
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -79,7 +85,7 @@ class MainActivity : ComponentActivity() {
             } else
                 Log.e(getString(R.string.app_name), "TTS failed to initialize")
         }
-
+        val stt = SpeechRecognizer.createSpeechRecognizer(this)
 
         val random = Random()
 
@@ -91,41 +97,87 @@ class MainActivity : ComponentActivity() {
                     setContent {
                         AssistantGPTTheme {
                             var enableButton by rememberSaveable { mutableStateOf(true) }
+                            var waitingForResponse by rememberSaveable { mutableStateOf(false) }
                             val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
                             val input = rememberSaveable { mutableStateOf("") }
-                            // A surface container using the 'background' color from the theme
+                            val showAlertDialog =
+                                rememberSaveable { mutableStateOf(AlertDialogTypes.NONE) }
+
+                            fun sendMessage() {
+                                if (input.value == "") return
+                                enableButton = false
+                                waitingForResponse = true
+                                viewModel.addMessage(
+                                    ChatMessage(
+                                        ChatMessageRole.USER.value(),
+                                        input.value.trim()
+                                    )
+                                )
+                                input.value = ""
+                                thread {
+                                    viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages()))
+                                    enableButton = true
+                                    waitingForResponse = false
+                                    if (ttsInit)
+                                        tts.speak(
+                                            viewModel.getMessages()[viewModel.getMessages().size - 1].content,
+                                            TextToSpeech.QUEUE_FLUSH,
+                                            null,
+                                            random.nextInt().toString()
+                                        )
+                                }
+                            }
+
+                            fun onClickVoice() {//onClickVoice: the voice input button is pressed
+                                if (!requestSpeechPermission()) return
+                                enableButton = false
+                                val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    i.putExtra(
+                                        RecognizerIntent.EXTRA_ENABLE_FORMATTING,
+                                        RecognizerIntent.FORMATTING_OPTIMIZE_LATENCY
+                                    )
+                                    i.putExtra(RecognizerIntent.EXTRA_MASK_OFFENSIVE_WORDS, false)
+                                }
+                                i.putExtra(
+                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                )
+                                i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                                stt.startListening(i)
+                            }
+
+                            stt.setRecognitionListener(RecognitionListener(input) { statusCode ->
+                                if (input.value != "" && statusCode == 0) sendMessage()
+                                else enableButton = true
+                            })
+
                             Surface(
                                 modifier = Modifier.fillMaxSize(),
                                 color = MaterialTheme.colorScheme.background
                             ) {
-                                ChatScreen(input, viewModel.getMessages(), enableButton) {
-                                    if (input.value == "") return@ChatScreen
-                                    enableButton = false
-                                    viewModel.addMessage(
-                                        ChatMessage(
-                                            ChatMessageRole.USER.value(),
-                                            input.value.trim()
-                                        )
-                                    )
-                                    input.value = ""
-                                    thread {
-                                        viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages()))
-                                        enableButton = true
-                                        if (ttsInit)
-                                            tts.speak(
-                                                viewModel.getMessages()[viewModel.getMessages().size - 1].content,
-                                                TextToSpeech.QUEUE_FLUSH,
-                                                null,
-                                                random.nextInt().toString()
-                                            )
-                                    }
-                                }
+                                ChatScreen(input,
+                                    viewModel.getMessages(),
+                                    enableButton,
+                                    waitingForResponse,
+                                    { sendMessage() },
+                                    { onClickVoice() })
+                                AlertDialogs(type = showAlertDialog)
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun requestSpeechPermission(): Boolean {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+            return true
+        else {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 12)
+        }
+        return false
     }
 }
 
@@ -226,7 +278,8 @@ fun ChatInput(
     modifier: Modifier = Modifier,
     inputText: MutableState<String>,
     enableButton: Boolean = true,
-    onClickSend: () -> Unit
+    onClickSend: () -> Unit,
+    onClickVoice: () -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -259,7 +312,7 @@ fun ChatInput(
             Icon(imageVector = Icons.Rounded.Send, contentDescription = "Send")
         }
         FilledIconButton(
-            onClick = { /*TODO*/ },
+            onClick = { onClickVoice() },
             modifier = Modifier
                 .padding(8.dp)
                 .size(50.dp),
@@ -282,14 +335,17 @@ fun ChatScreen(
     input: MutableState<String>,
     msgLst: List<ChatMessage>,
     enableButton: Boolean = true,
-    onClickSend: () -> Unit
+    showLoading: Boolean = false,
+    onClickSend: () -> Unit,
+    onClickVoice: () -> Unit
 ) {
     Scaffold(bottomBar = {
         BottomAppBar(modifier = Modifier.height(100.dp)) {
             ChatInput(
                 inputText = input,
-                enableButton = enableButton
-            ) { onClickSend() }
+                enableButton = enableButton,
+                onClickSend = { onClickSend() },
+                onClickVoice = { onClickVoice() })
         }
     }) {
         Box(
@@ -299,7 +355,7 @@ fun ChatScreen(
         ) {
             ChatMessageConversation(
                 chatMessages = msgLst,
-                showLoading = !enableButton,
+                showLoading = showLoading,
             )
         }
     }
