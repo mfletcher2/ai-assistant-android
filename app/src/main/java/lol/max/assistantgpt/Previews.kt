@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -87,6 +88,9 @@ fun PreviewChatScreen() {
     val dialog = remember {
         mutableStateOf(DialogTypes.NONE)
     }
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
     val msgLst = arrayListOf<ChatMessage>()
     msgLst.add(ChatMessage(ChatMessageRole.USER.value(), "Yo waddup bitch"))
     msgLst.add(ChatMessage(ChatMessageRole.ASSISTANT.value(), "Fuck you"))
@@ -113,7 +117,7 @@ fun PreviewChatScreen() {
         { msgLst.add(ChatMessage(ChatMessageRole.USER.value(), input.value)) }
     AssistantGPTTheme {
         Surface {
-            ChatScreen(input, msgLst, showDialog = dialog, onClickSend = onClickSend, onClickVoice = {})
+            ChatScreen(input, msgLst, showDialog = dialog, snackbarHostState = snackbarHostState, onClickSend = onClickSend, onClickVoice = {})
         }
     }
 }

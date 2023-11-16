@@ -47,6 +47,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -58,6 +60,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,10 +76,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 import java.util.Random
-import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
@@ -108,13 +111,16 @@ class MainActivity : ComponentActivity() {
                     // Update UI elements
                     setContent {
                         AssistantGPTTheme {
+                            val coroutineScope = rememberCoroutineScope()
                             var enableButton by rememberSaveable { mutableStateOf(true) }
                             var waitingForResponse by rememberSaveable { mutableStateOf(false) }
                             val input = rememberSaveable { mutableStateOf("") }
                             val showDialog =
                                 rememberSaveable { mutableStateOf(DialogTypes.NONE) }
+                            val snackBarHostState = remember { SnackbarHostState() }
                             val options = Options(
-                                model = prefs!!.getString("model", "gpt-3.5-turbo")!!)
+                                model = prefs!!.getString("model", "gpt-3.5-turbo")!!
+                            )
 
                             fun sendMessage() {
                                 if (input.value == "") return
@@ -127,8 +133,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 )
                                 input.value = ""
-                                thread {
-                                    viewModel.addMessages(chatApi.getCompletion(viewModel.getMessages(), options.model))
+
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    viewModel.addMessages(chatApi.getCompletion(
+                                        viewModel.getMessages(),
+                                        options.model,
+                                        snackBarHostState
+                                    ))
                                     enableButton = true
                                     waitingForResponse = false
                                     if (ttsInit)
@@ -174,6 +185,7 @@ class MainActivity : ComponentActivity() {
                                     enableButton,
                                     waitingForResponse,
                                     showDialog,
+                                    snackBarHostState,
                                     { sendMessage() },
                                     { onClickVoice() })
                                 Dialogs(type = showDialog, options = options)
@@ -259,10 +271,12 @@ fun Conversation(
                 }
             }
 
-            AnimatedVisibility(
-                visibleState = state,
-                enter = fadeIn() + slideInVertically { it }) {
-                MessageCard(msg = message)
+            if (message.content != null && (message.role == ChatMessageRole.ASSISTANT.value() || message.role == ChatMessageRole.USER.value())) {
+                AnimatedVisibility(
+                    visibleState = state,
+                    enter = fadeIn() + slideInVertically { it }) {
+                    MessageCard(msg = message)
+                }
             }
 
 
@@ -351,6 +365,7 @@ fun ChatScreen(
     enableButton: Boolean = true,
     showLoading: Boolean = false,
     showDialog: MutableState<DialogTypes>,
+    snackbarHostState: SnackbarHostState,
     onClickSend: () -> Unit,
     onClickVoice: () -> Unit
 ) {
@@ -376,6 +391,8 @@ fun ChatScreen(
                     )
                 }
             })
+    }, snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState)
     }) {
         Box(
             modifier = Modifier
