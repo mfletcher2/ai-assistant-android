@@ -1,18 +1,17 @@
-package lol.max.assistantgpt
+package lol.max.assistantgpt.api
 
 import android.os.Bundle
 import android.speech.SpeechRecognizer
 import android.util.Log
-import androidx.compose.runtime.MutableState
 
 class RecognitionListener(
-    private val text: MutableState<String>,
-    val runOnEndOfSpeech: (statusCode: Int) -> Unit
+    private val updateText: (String) -> Unit,
+    private val runOnEndOfSpeech: (statusCode: Int) -> Unit
 ) :
     android.speech.RecognitionListener {
     override fun onReadyForSpeech(params: Bundle?) {
         Log.i("SpeechRecognizer", "Speech recognition ready")
-        text.value = ""
+        updateText("")
     }
 
     override fun onBeginningOfSpeech() {}
@@ -34,7 +33,7 @@ class RecognitionListener(
             return
         } else {
             val arr = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: return
-            text.value = arr[0]
+            updateText(arr[0])
         }
         runOnEndOfSpeech(0)
     }
@@ -42,7 +41,7 @@ class RecognitionListener(
     override fun onPartialResults(partialResults: Bundle?) {
         if (partialResults == null) return
         val arr = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: return
-        text.value = arr[0]
+        updateText(arr[0])
     }
 
     override fun onEvent(eventType: Int, params: Bundle?) {}

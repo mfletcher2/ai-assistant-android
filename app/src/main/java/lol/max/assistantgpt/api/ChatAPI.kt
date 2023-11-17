@@ -1,4 +1,4 @@
-package lol.max.assistantgpt
+package lol.max.assistantgpt.api
 
 import android.content.Context
 import android.content.Intent
@@ -78,12 +78,21 @@ class ChatAPI(
             val functionCall = responseMessage.functionCall
             if (functionCall != null) {
                 snackbarHostState?.showSnackbar("${functionCall.name}(${functionCall.arguments})")
-                Log.i("AssistantGPT", "GPT is running this function: ${functionCall.name}(${functionCall.arguments})")
+                Log.i(
+                    "AssistantGPT",
+                    "GPT is running this function: ${functionCall.name}(${functionCall.arguments})"
+                )
                 val functionResponseMessage =
                     functionExecutor.executeAndConvertToMessageHandlingExceptions(responseMessage.functionCall)
                 newMessages.add(functionResponseMessage)
                 chatCompletionRequest.messages.addAll(newMessages)
-                newMessages.addAll(getCompletion(chatCompletionRequest.messages, model, snackbarHostState))
+                newMessages.addAll(
+                    getCompletion(
+                        chatCompletionRequest.messages,
+                        model,
+                        snackbarHostState
+                    )
+                )
             }
         } catch (e: RuntimeException) {
             e.printStackTrace()

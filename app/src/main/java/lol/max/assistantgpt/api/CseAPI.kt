@@ -1,21 +1,23 @@
-package lol.max.assistantgpt
+package lol.max.assistantgpt.api
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.theokanning.openai.completion.chat.ChatFunction
+import lol.max.assistantgpt.BuildConfig
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.lang.Exception
 
 val cseChatFunction: ChatFunction = ChatFunction.builder()
     .name("get_web_search")
-    .description("Search the web for a given query. You should use this if you are unsure of " +
-            "the answer or need to fact-check something. Always cite the displayLink that you " +
-            "used information from in your response.")
+    .description(
+        "Search the web for a given query. You should use this if you are unsure of " +
+                "the answer or need to fact-check something. Always cite the displayLink that you " +
+                "used information from in your response."
+    )
     .executor(CseAPI::class.java) { it.doSearch(it.query) }
     .build()
 
