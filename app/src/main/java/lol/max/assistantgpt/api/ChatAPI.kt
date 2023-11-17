@@ -21,7 +21,9 @@ import com.theokanning.openai.service.OpenAiService.defaultRetrofit
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import java.lang.ref.WeakReference
+import java.time.DayOfWeek
 import java.time.Duration
+import java.util.Calendar
 
 
 class ChatAPI(
@@ -39,8 +41,14 @@ class ChatAPI(
         .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether or not it was successful.")
         .executor(PackageRunRequest::class.java) { it.runPackage(context.get()) }
         .build()
+    private val getDateAndTimeFunction = ChatFunction.builder()
+        .name("get_date_and_time")
+        .description("Get the current date and time in the user's local time zone.")
+        .executor(DateAndTimeRequest::class.java) { it.getDateAndTime() }
+        .build()
 
-    private val functionList = listOf(cseChatFunction, getAppsListFunction, launchPackageFunction)
+    private val functionList =
+        listOf(cseChatFunction, getAppsListFunction, launchPackageFunction, weatherChatFunction, getDateAndTimeFunction)
     private val functionExecutor = FunctionExecutor(functionList)
 
     private var mapper: ObjectMapper = defaultObjectMapper()
@@ -72,7 +80,7 @@ class ChatAPI(
             val responseRequest = service.createChatCompletion(chatCompletionRequest).choices[0]
             val responseMessage = responseRequest.message
             Log.i("AssistantGPT", "GPT responded: ${responseMessage.content}")
-            Log.i("AssistantGPT", "with response reason: ${responseRequest.finishReason}")
+            Log.i("AssistantGPT", "with stop reason: ${responseRequest.finishReason}")
             newMessages.add(responseMessage)
 
             val functionCall = responseMessage.functionCall
@@ -144,3 +152,18 @@ class PackageRunRequest {
         return true
     }
 }
+
+class DateAndTimeRequest {
+    fun getDateAndTime(): DateAndTime {
+        val calendar = Calendar.getInstance()
+        return DateAndTime(
+            DayOfWeek.of(calendar.get(Calendar.DAY_OF_WEEK)).name,
+            calendar.get(Calendar.DAY_OF_MONTH),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            calendar.get(Calendar.SECOND))
+    }
+}
+data class DateAndTime(val dayOfWeek: String, val dayOfMonth: Int, val month: Int, val year: Int, val hour: Int, val minute: Int, val second: Int)

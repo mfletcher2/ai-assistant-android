@@ -159,30 +159,16 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("googleKey", options.googleKey)
         e.putString("googleSearchId", options.googleSearchId)
         e.apply()
-
-        options.googleKey = "LOL"
     }
 }
 
 class Options(
     var model: String,
     var timeoutSec: Int,
-    openAiKey: String,
-    googleKey: String,
-    googleSearchId: String
+    var openAiKey: String,
+    var googleKey: String,
+    var googleSearchId: String
 ) {
-    var openAiKey = openAiKey
-        get() {
-            return if (field == "") BuildConfig.OPENAI_API_KEY else field
-        }
-    var googleKey = googleKey
-        get() {
-            return if (field == "") BuildConfig.GOOGLE_API_KEY else field
-        }
-    var googleSearchId = googleSearchId
-        get() {
-            return if (field == "") BuildConfig.GOOGLE_SEARCH_ID else field
-        }
 
     companion object {
         val Default = Options(
