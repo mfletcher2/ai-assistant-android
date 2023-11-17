@@ -1,4 +1,4 @@
-package lol.max.assistantgpt
+package lol.max.assistantgpt.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.theokanning.openai.completion.chat.ChatMessage

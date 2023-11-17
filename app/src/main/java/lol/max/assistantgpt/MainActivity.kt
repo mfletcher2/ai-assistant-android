@@ -79,6 +79,7 @@ import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
+import lol.max.assistantgpt.viewmodel.ChatMessageListViewModel
 import java.lang.ref.WeakReference
 import java.util.Random
 
