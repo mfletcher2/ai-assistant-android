@@ -1,7 +1,6 @@
 package lol.max.assistantgpt.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.speech.SpeechRecognizer
@@ -70,40 +69,37 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.api.RecognitionListener
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
 import java.util.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ChatScreen(
-    tts: TextToSpeech,
-    stt: SpeechRecognizer,
-    chatAPI: ChatAPI,
-    options: Options,
+    tts: TextToSpeech?,
+    stt: SpeechRecognizer?,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     val random = Random()
-    val activity = LocalContext.current as Activity
+    lateinit var activity: Activity
+    if (LocalContext.current is Activity)
+        activity = LocalContext.current as Activity
+
 
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
 
     fun speakText(string: String) {
-        tts.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
+        tts?.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
     }
-    stt.setRecognitionListener(
+    stt?.setRecognitionListener(
         RecognitionListener({ viewModel.updateChatInput(it) },
             {
                 viewModel.endVoiceChatInput(
                     it,
                     coroutineScope,
-                    chatAPI,
-                    options,
                     snackBarHostState
                 ) { str -> speakText(str) }
             })
@@ -117,10 +113,8 @@ fun ChatScreen(
                 enableButton = uiState.enableButtons,
                 onClickSend = {
                     viewModel.sendChatInput(
-                        coroutineScope,
-                        chatAPI,
-                        options,
                         snackBarHostState,
+                        coroutineScope
                     ) {
                         speakText(it)
                     }
@@ -138,7 +132,8 @@ fun ChatScreen(
                         )
                         return@ChatInput
                     }
-                    viewModel.startChatVoiceInput(stt)
+                    if (stt != null)
+                        viewModel.startChatVoiceInput(stt)
                 }
             )
         }
@@ -174,11 +169,12 @@ fun ChatScreen(
                 showLoading = uiState.enableWaitingIndicator
             )
         }
-        SettingsDialog(type = viewModel.showDialog, options = options) {
-            viewModel.updateShowDialog(
-                DialogTypes.NONE
-            )
-        }
+        if (viewModel.showDialog == DialogTypes.SETTINGS)
+            SettingsDialog(options = viewModel.options, {
+                viewModel.updateShowDialog(
+                    DialogTypes.NONE
+                )
+            }, { viewModel.saveSharedPreferences() })
     }
 }
 

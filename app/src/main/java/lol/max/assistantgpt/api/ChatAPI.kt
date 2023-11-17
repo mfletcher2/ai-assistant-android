@@ -55,7 +55,7 @@ class ChatAPI(
 
     suspend fun getCompletion(
         chatMessages: List<ChatMessage>,
-        model: String = "gpt-3.5-turbo",
+        model: String,
         snackbarHostState: SnackbarHostState? = null
     ): List<ChatMessage> {
         val newMessages: ArrayList<ChatMessage> = arrayListOf()

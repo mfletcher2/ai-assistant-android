@@ -44,7 +44,7 @@ class CseAPI {
             val search = response.execute().body()
             search?.items ?: listOf()
         } catch (e: Exception) {
-            listOf(Result("An error occurred.", "", ""))
+            listOf(Result("An error occurred.\n${e.message}", "", ""))
         }
     }
 }
@@ -56,20 +56,13 @@ interface GoogleCseService {
         @Query("key") key: String,
         @Query("cx") id: String,
         @Query("q") query: String,
-        @Query("num") num: Int = 10
+        @Query("num") num: Int = 10,
+        @Query("fields") fields: String = "items(title, displayLink, snippet)"
     ): Call<Search>
 }
 
 data class Search(
-    val queries: Queries, val items: List<Result>
-)
-
-data class Queries(
-    val request: List<Request>
-)
-
-data class Request(
-    val title: String
+    val items: List<Result>
 )
 
 data class Result(

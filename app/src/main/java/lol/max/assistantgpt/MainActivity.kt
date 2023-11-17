@@ -1,6 +1,5 @@
 package lol.max.assistantgpt
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
@@ -11,17 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.ui.ChatScreen
-import lol.max.assistantgpt.ui.Options
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
-import java.lang.ref.WeakReference
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var prefs: SharedPreferences
-    private lateinit var options: Options
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val tts = TextToSpeech(
@@ -33,10 +25,6 @@ class MainActivity : ComponentActivity() {
         }
         val stt = SpeechRecognizer.createSpeechRecognizer(this)
 
-        prefs = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE)
-        options = Options(prefs.getString("model", "gpt-3.5-turbo")!!)
-        val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, context = WeakReference(this))
-
         // Update UI elements
         setContent {
             AssistantGPTTheme {
@@ -44,19 +32,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen(tts, stt, chatApi, options)
+                    ChatScreen(tts, stt)
                 }
             }
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        val e = prefs.edit()
-        e.putString("model", options.model)
-        e.apply()
-    }
-
 }
-
-
