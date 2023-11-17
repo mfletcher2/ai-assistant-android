@@ -9,6 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.lang.Exception
 
 val cseChatFunction: ChatFunction = ChatFunction.builder()
     .name("get_web_search")
@@ -37,8 +38,12 @@ class CseAPI {
         )
         Log.i("CseAPI", "Performing search for \"$query\"")
 
-        val search = response.execute().body()
-        return search?.items ?: listOf()
+        return try {
+            val search = response.execute().body()
+            search?.items ?: listOf()
+        } catch (e: Exception) {
+            listOf(Result("An error occurred.", "", ""))
+        }
     }
 }
 

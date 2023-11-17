@@ -1,10 +1,16 @@
 package lol.max.assistantgpt
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ResolveInfo
 import android.util.Log
 import androidx.compose.material3.SnackbarHostState
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.theokanning.openai.client.OpenAiApi
 import com.theokanning.openai.completion.chat.ChatCompletionRequest
+import com.theokanning.openai.completion.chat.ChatFunction
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.FunctionExecutor
@@ -14,11 +20,27 @@ import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
 import com.theokanning.openai.service.OpenAiService.defaultRetrofit
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import java.lang.ref.WeakReference
 import java.time.Duration
 
 
-class ChatAPI(apiKey: String, timeoutSec: Long = 60) {
-    private val functionList = listOf(cseChatFunction)
+class ChatAPI(
+    apiKey: String,
+    timeoutSec: Long = 60,
+    context: WeakReference<Context> = WeakReference(null)
+) {
+    private val getAppsListFunction = ChatFunction.builder()
+        .name("get_apps_list")
+        .description("Get a list of installed applications.")
+        .executor(PackageListRequest::class.java) { it.getPackages(context.get()) }
+        .build()
+    private val launchPackageFunction = ChatFunction.builder()
+        .name("launch_package")
+        .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether or not it was successful.")
+        .executor(PackageRunRequest::class.java) { it.runPackage(context.get()) }
+        .build()
+
+    private val functionList = listOf(cseChatFunction, getAppsListFunction, launchPackageFunction)
     private val functionExecutor = FunctionExecutor(functionList)
 
     private var mapper: ObjectMapper = defaultObjectMapper()
@@ -47,29 +69,28 @@ class ChatAPI(apiKey: String, timeoutSec: Long = 60) {
             .functions(functionExecutor.functions)
             .build()
         try {
-            val responseMessage =
-                service.createChatCompletion(chatCompletionRequest).choices[0].message
+            val responseRequest = service.createChatCompletion(chatCompletionRequest).choices[0]
+            val responseMessage = responseRequest.message
             Log.i("AssistantGPT", "GPT responded: ${responseMessage.content}")
+            Log.i("AssistantGPT", "with response reason: ${responseRequest.finishReason}")
             newMessages.add(responseMessage)
 
             val functionCall = responseMessage.functionCall
             if (functionCall != null) {
                 snackbarHostState?.showSnackbar("${functionCall.name}(${functionCall.arguments})")
-
+                Log.i("AssistantGPT", "GPT is running this function: ${functionCall.name}(${functionCall.arguments})")
                 val functionResponseMessage =
                     functionExecutor.executeAndConvertToMessageHandlingExceptions(responseMessage.functionCall)
                 newMessages.add(functionResponseMessage)
                 chatCompletionRequest.messages.addAll(newMessages)
-                val functionCompletionMessage =
-                    service.createChatCompletion(chatCompletionRequest).choices[0].message
-                newMessages.add(functionCompletionMessage)
+                newMessages.addAll(getCompletion(chatCompletionRequest.messages, model, snackbarHostState))
             }
         } catch (e: RuntimeException) {
             e.printStackTrace()
             newMessages.add(
                 ChatMessage(
                     ChatMessageRole.ASSISTANT.value(),
-                    "Sorry, your request timed out."
+                    "Sorry, an error occured.\n${e.message}"
                 )
             )
         }
@@ -77,3 +98,40 @@ class ChatAPI(apiKey: String, timeoutSec: Long = 60) {
     }
 }
 
+class PackageListRequest {
+    fun getPackages(context: Context?): List<PackageResult> {
+        if (context == null)
+            return listOf()
+
+        val mainIntent = Intent(Intent.ACTION_MAIN, null)
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
+        val pkgAppsList: List<ResolveInfo> =
+            context.packageManager.queryIntentActivities(mainIntent, 0)
+
+        val resultList = ArrayList<PackageResult>()
+        pkgAppsList.forEach {
+            resultList.add(
+                PackageResult(
+                    it.loadLabel(context.packageManager).toString(),
+                    it.activityInfo.packageName
+                )
+            )
+        }
+        return resultList
+    }
+}
+
+data class PackageResult(val appName: String, val packageName: String)
+
+class PackageRunRequest {
+    @JsonPropertyDescription("Name of the package to run")
+    @JsonProperty(required = true)
+    lateinit var packageName: String
+    fun runPackage(context: Context?): Boolean {
+        if (context == null) return false
+        val i = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
+        i.addCategory(Intent.CATEGORY_LAUNCHER)
+        context.startActivity(i)
+        return true
+    }
+}

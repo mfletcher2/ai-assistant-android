@@ -79,6 +79,7 @@ import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
+import java.lang.ref.WeakReference
 import java.util.Random
 
 class MainActivity : ComponentActivity() {
@@ -100,7 +101,7 @@ class MainActivity : ComponentActivity() {
         val stt = SpeechRecognizer.createSpeechRecognizer(this)
 
         prefs = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE)
-        val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
+        val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, context = WeakReference(this))
 
         val random = Random()
 
