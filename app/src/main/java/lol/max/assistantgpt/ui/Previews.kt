@@ -106,6 +106,14 @@ fun PreviewOptionsDialog() {
         SettingsDialog(Options.Default, {})
     }
 }
+
+@Preview
+@Composable
+fun PreviewInfoDialog() {
+    AssistantGPTTheme {
+        InfoDialog()
+    }
+}
 //
 //
 //@Composable

@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.BottomAppBar
@@ -141,13 +142,19 @@ fun ChatScreen(
         TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) },
             colors = TopAppBarDefaults.smallTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.primaryContainer
+                titleContentColor = MaterialTheme.colorScheme.onPrimary
             ), actions = {
+                IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.INFO) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Info, contentDescription = "Info",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
                 IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.SETTINGS) }) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.primaryContainer
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             })
@@ -175,6 +182,8 @@ fun ChatScreen(
                     DialogTypes.NONE
                 )
             }, { viewModel.saveSharedPreferences() })
+        else if (viewModel.showDialog == DialogTypes.INFO)
+            InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
     }
 }
 

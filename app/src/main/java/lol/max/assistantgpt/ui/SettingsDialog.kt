@@ -33,7 +33,7 @@ import androidx.core.text.isDigitsOnly
 import lol.max.assistantgpt.ui.viewmodel.Options
 
 enum class DialogTypes {
-    NONE, SETTINGS;
+    NONE, SETTINGS, INFO;
 }
 
 val availableModels = listOf("gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4")
