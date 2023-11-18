@@ -67,8 +67,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import com.theokanning.openai.messages.Message
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.RecognitionListener
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
@@ -181,14 +181,14 @@ fun ChatScreen(
                 viewModel.updateShowDialog(
                     DialogTypes.NONE
                 )
-            }, { viewModel.saveSharedPreferences() })
+            }, { viewModel.saveOptions() })
         else if (viewModel.showDialog == DialogTypes.INFO)
             InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
     }
 }
 
 @Composable
-fun MessageCard(msg: ChatMessage) {
+fun MessageCard(msg: Message) {
     val msgCorner = 12.dp
     Row(
         modifier = Modifier.padding(8.dp),
@@ -224,7 +224,7 @@ fun MessageCard(msg: ChatMessage) {
                 color = if (msg.role == ChatMessageRole.ASSISTANT.value()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
             ) {
                 Text(
-                    text = msg.content,
+                    text = msg.content[0].text.value,
                     modifier = Modifier.padding(8.dp),
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -235,7 +235,7 @@ fun MessageCard(msg: ChatMessage) {
 
 @Composable
 fun Conversation(
-    messages: List<ChatMessage>,
+    messages: List<Message>,
     showLoading: Boolean = false,
 ) {
     val listState = rememberLazyListState()
@@ -243,7 +243,7 @@ fun Conversation(
         listState.animateScrollToItem(messages.size)
     }
     LazyColumn(state = listState) {
-        itemsIndexed(messages) { i, message ->
+        itemsIndexed(messages.reversed()) { i, message ->
             val state = remember {
                 MutableTransitionState(i != messages.size - 1).apply {
                     // Start the animation immediately.
@@ -274,7 +274,7 @@ fun Conversation(
 
 @Composable
 fun ChatMessageConversation(
-    chatMessages: List<ChatMessage>,
+    chatMessages: List<Message>,
     showLoading: Boolean = false,
 ) {
     Conversation(messages = chatMessages, showLoading = showLoading)
@@ -298,7 +298,7 @@ fun ChatInput(
     ) {
         OutlinedTextField(
             value = inputText,
-            onValueChange = { onInputTextChanged(it) },
+            onValueChange = { if(enableButton) onInputTextChanged(it) },
             colors = TextFieldDefaults.textFieldColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier
                 .weight(1f)

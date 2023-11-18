@@ -11,8 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import com.theokanning.openai.completion.chat.ChatMessage
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import com.theokanning.openai.messages.Message
+import com.theokanning.openai.messages.MessageContent
+import com.theokanning.openai.messages.content.Text
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,27 +26,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.ChatAPI
+import lol.max.assistantgpt.api.AssistantsAPI
 import lol.max.assistantgpt.ui.DialogTypes
 import lol.max.assistantgpt.ui.availableModels
-import java.lang.ref.WeakReference
+import kotlin.concurrent.thread
 
 data class ChatScreenUiState(
-    val chatList: List<ChatMessage> = arrayListOf(),
-    val enableButtons: Boolean = true,
-    val enableWaitingIndicator: Boolean = false,
+    val chatList: List<Message> = arrayListOf(),
+    val enableButtons: Boolean = false,
+    val enableWaitingIndicator: Boolean = true,
 )
 
 class ChatScreenViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(ChatScreenUiState())
     val uiState: StateFlow<ChatScreenUiState> = _uiState.asStateFlow()
 
-    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, context = WeakReference(application))
-
+    private var assistantsApi: AssistantsAPI
 
     private val sharedPreferences = application.applicationContext.getSharedPreferences(
-        application.getString(R.string.app_name),
-        Context.MODE_PRIVATE
+        application.getString(R.string.app_name), Context.MODE_PRIVATE
     )
     val options = Options(
         model = sharedPreferences.getString("model", Options.Default.model)!!,
@@ -50,10 +52,26 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         openAiKey = sharedPreferences.getString("openAiKey", Options.Default.openAiKey)!!,
         googleKey = sharedPreferences.getString("googleKey", Options.Default.googleKey)!!,
         googleSearchId = sharedPreferences.getString(
-            "googleSearchId",
-            Options.Default.googleSearchId
+            "googleSearchId", Options.Default.googleSearchId
         )!!,
+        allowSensors = sharedPreferences.getBoolean("allowSensors", Options.Default.allowSensors)
     )
+
+    init {
+        val gson = Gson()
+        val type = object : TypeToken<List<String>>() {}.type
+
+        assistantsApi = AssistantsAPI(
+            application,
+            if (options.openAiKey == "") BuildConfig.OPENAI_API_KEY else options.openAiKey,
+            gson.fromJson(sharedPreferences.getString("threadIds", "[]"), type),
+            sharedPreferences.getInt("currentThread", 0)
+        ) { saveThreads() }
+        thread {
+            setThread(assistantsApi.currentThread)
+        }
+
+    }
 
     var chatInput by mutableStateOf("")
         private set
@@ -68,32 +86,42 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         onSuccess: (String) -> Unit
     ) {
         if (chatInput == "") return
+
+        chatInput = chatInput.trim()
+
+        val userMessage = Message()
+        userMessage.role = ChatMessageRole.USER.value()
+        userMessage.content = arrayListOf(MessageContent())
+        userMessage.content[0].text = Text()
+        userMessage.content[0].text.value = chatInput
         _uiState.update {
             it.copy(
                 enableButtons = false,
                 enableWaitingIndicator = true,
-                chatList = it.chatList + ChatMessage(ChatMessageRole.USER.value(), chatInput.trim())
+                chatList = listOf(userMessage) + it.chatList
             )
         }
 
+        val tempInput = chatInput
         chatInput = ""
 
         coroutineScope.launch(Dispatchers.IO) {
-            val newMessages =
-                chatApi.getCompletion(
-                    _uiState.value.chatList,
-                    options.model,
-                    snackbarHostState
-                )
+            val newMessageList = assistantsApi.getResponse(
+                tempInput, options.model, options.allowSensors
+            ) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(it)
+                }
+            }
 
             _uiState.update {
                 it.copy(
                     enableButtons = true,
                     enableWaitingIndicator = false,
-                    chatList = it.chatList + newMessages
+                    chatList = newMessageList ?: _uiState.value.chatList
                 )
             }
-            onSuccess(newMessages[newMessages.size - 1].content)
+            if (newMessageList != null) onSuccess(newMessageList[0].content[0].text.value)
         }
     }
 
@@ -112,34 +140,25 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             i.putExtra(RecognizerIntent.EXTRA_MASK_OFFENSIVE_WORDS, false)
         }
         i.putExtra(
-            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         stt.startListening(i)
     }
 
     fun endVoiceChatInput(
-        statusCode: Int, coroutineScope: CoroutineScope,
+        statusCode: Int,
+        coroutineScope: CoroutineScope,
         snackbarHostState: SnackbarHostState,
         onSuccess: (String) -> Unit
     ) {
         if (statusCode == 0 && chatInput != "") {
             sendChatInput(
-                snackbarHostState,
-                coroutineScope
-            ) { onSuccess(_uiState.value.chatList[_uiState.value.chatList.size - 1].content) }
+                snackbarHostState, coroutineScope
+            ) { onSuccess(_uiState.value.chatList[0].content[0].text.value) }
         } else _uiState.update {
             it.copy(
                 enableButtons = true
-            )
-        }
-    }
-
-    fun setMessagesList(list: List<ChatMessage>) {
-        _uiState.update {
-            it.copy(
-                chatList = list
             )
         }
     }
@@ -151,7 +170,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         showDialog = newDialog
     }
 
-    fun saveSharedPreferences() {
+    fun saveOptions() {
         val e = sharedPreferences.edit()
         e.putString("model", options.model)
         e.putInt("timeoutSec", options.timeoutSec)
@@ -160,14 +179,36 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("googleSearchId", options.googleSearchId)
         e.apply()
     }
+
+    private fun saveThreads() {
+        val e = sharedPreferences.edit()
+        val gson = Gson()
+        e.putString("threadIds", gson.toJson(assistantsApi.threadIds))
+        e.putInt("currentThread", assistantsApi.currentThread)
+        e.apply()
+    }
+
+    private fun setThread(threadIdx: Int) {
+        assistantsApi.currentThread = threadIdx
+
+        _uiState.update {
+            it.copy(
+                chatList = assistantsApi.getMessagesFromAPI() ?: _uiState.value.chatList,
+                enableButtons = true,
+                enableWaitingIndicator = false
+            )
+        }
+    }
 }
+
 
 class Options(
     var model: String,
     var timeoutSec: Int,
     var openAiKey: String,
     var googleKey: String,
-    var googleSearchId: String
+    var googleSearchId: String,
+    var allowSensors: Boolean
 ) {
 
     companion object {
@@ -176,7 +217,8 @@ class Options(
             timeoutSec = 60,
             openAiKey = "",
             googleKey = "",
-            googleSearchId = ""
+            googleSearchId = "",
+            allowSensors = true
         )
     }
 }
