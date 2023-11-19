@@ -32,11 +32,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -243,7 +243,7 @@ fun Conversation(
     newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 ) {
     val listState = rememberLazyListState()
-    if(messages.isNotEmpty())
+    if (messages.isNotEmpty())
         LaunchedEffect(messages.size) {
             listState.animateScrollToItem(messages.size - 1)
         }
@@ -267,14 +267,13 @@ fun Conversation(
 
 
         }
-        item {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(if (showLoading) 75.dp else 0.dp)
-                    .padding(16.dp)
-            )
-
-        }
+        if (showLoading)
+            item {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+            }
     }
 }
 
