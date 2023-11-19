@@ -175,9 +175,10 @@ fun ChatScreen(
         ) {
             ChatMessageConversation(
                 chatMessages = uiState.chatList,
-                showLoading = uiState.enableWaitingIndicator,
                 newMessageAnimated = uiState.newMessageAnimated
             )
+            if (uiState.enableWaitingIndicator)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         if (viewModel.showDialog == DialogTypes.SETTINGS)
             SettingsDialog(options = viewModel.options, {
@@ -239,7 +240,6 @@ fun MessageCard(msg: ChatMessage) {
 @Composable
 fun Conversation(
     messages: List<ChatMessage>,
-    showLoading: Boolean = false,
     newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 ) {
     val listState = rememberLazyListState()
@@ -267,25 +267,16 @@ fun Conversation(
 
 
         }
-        if (showLoading)
-            item {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-            }
     }
 }
 
 @Composable
 fun ChatMessageConversation(
     chatMessages: List<ChatMessage>,
-    showLoading: Boolean = false,
     newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 ) {
     Conversation(
         messages = chatMessages,
-        showLoading = showLoading,
         newMessageAnimated = newMessageAnimated
     )
 }
