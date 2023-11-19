@@ -213,7 +213,7 @@ fun MessageCard(msg: ChatMessage) {
         ) {
             Text(
                 text = msg.role[0].uppercaseChar() + msg.role.substring(1),
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelMedium
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -225,7 +225,7 @@ fun MessageCard(msg: ChatMessage) {
                     0.dp
                 )
                 else RoundedCornerShape(msgCorner, msgCorner, 0.dp, msgCorner),
-                color = if (msg.role == ChatMessageRole.ASSISTANT.value()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                color = if (msg.role == ChatMessageRole.ASSISTANT.value()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer,
             ) {
                 Text(
                     text = msg.content,
