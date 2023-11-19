@@ -3,7 +3,6 @@ package lol.max.assistantgpt.api
 import android.content.Context
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.gson.Gson
 import com.knuddels.jtokkit.Encodings
 import com.knuddels.jtokkit.api.Encoding
 import com.theokanning.openai.client.OpenAiApi
@@ -34,6 +33,7 @@ class ChatAPI(
 
     private var encodingRegistry = Encodings.newLazyEncodingRegistry()
 
+    private var tokensUsed: Long = 0
 
     fun getCompletion(
         chatMessages: ArrayList<ChatMessage>,
@@ -61,10 +61,12 @@ class ChatAPI(
             .build()
 
         try {
-            val responseRequest = service.createChatCompletion(chatCompletionRequest).choices[0]
-            val responseMessage = responseRequest.message
+            val responseRequest = service.createChatCompletion(chatCompletionRequest)
+            tokensUsed = responseRequest.usage.totalTokens
+
+            val responseMessage = responseRequest.choices[0].message
             Log.i("AssistantGPT", "GPT responded: ${responseMessage.content}")
-            Log.i("AssistantGPT", "with stop reason: ${responseRequest.finishReason}")
+            Log.i("AssistantGPT", "with stop reason: ${responseRequest.choices[0].finishReason}")
             messagesListCopy.add(responseMessage)
 
             val functionCall = responseMessage.functionCall
@@ -97,12 +99,12 @@ class ChatAPI(
         encoding: Encoding,
         maxTokens: Int
     ) {
-        val listStr = Gson().toJson(list)
-        val numTokens = encoding.countTokens(listStr)
+        val numTokens = tokensUsed + encoding.countTokens(list[list.size - 1].content)
         Log.i("ChatAPI", "Number of tokens: $numTokens")
         if (numTokens > maxTokens) {
             Log.i("ChatAPI", "Too many tokens, truncating messages")
             list.removeAt(0)
+            tokensUsed -= encoding.countTokens(list[0].content)
             countTokensAndTruncate(list, encoding, maxTokens)
         }
     }
