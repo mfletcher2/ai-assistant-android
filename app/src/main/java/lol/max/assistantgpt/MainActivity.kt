@@ -1,5 +1,6 @@
 package lol.max.assistantgpt
 
+import android.os.Build
 import android.os.Bundle
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
@@ -23,7 +24,10 @@ class MainActivity : ComponentActivity() {
                 Log.i(getString(R.string.app_name), "TTS initialized")
             else Log.e(getString(R.string.app_name), "TTS failed to initialize")
         }
-        val stt = SpeechRecognizer.createSpeechRecognizer(this)
+        val stt =
+            if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this))
+                SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            else SpeechRecognizer.createSpeechRecognizer(this)
 
         // Update UI elements
         setContent {
