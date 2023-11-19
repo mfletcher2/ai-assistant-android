@@ -239,9 +239,10 @@ fun Conversation(
     showLoading: Boolean = false,
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(messages.size) {
-        listState.animateScrollToItem(messages.size)
-    }
+    if(messages.isNotEmpty())
+        LaunchedEffect(messages.size) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
     LazyColumn(state = listState) {
         itemsIndexed(messages) { i, message ->
             val state = remember {

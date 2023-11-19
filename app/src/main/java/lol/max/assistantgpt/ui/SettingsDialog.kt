@@ -30,24 +30,24 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
+import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.viewmodel.Options
 
 enum class DialogTypes {
     NONE, SETTINGS, INFO;
 }
 
-val availableModels = listOf("gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4")
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest: () -> Unit = {}) {
-    var selectedModel by rememberSaveable { mutableStateOf(options.model) }
+    var selectedModel by rememberSaveable { mutableStateOf(options.model.name) }
     var timeoutSec by rememberSaveable { mutableStateOf(options.timeoutSec.toString()) }
     AlertDialog(onDismissRequest = { onDismissRequest() },
         confirmButton = {
             TextButton(
                 onClick = {
-                    options.model = selectedModel
+                    options.model =
+                        availableModels.find { it.name == selectedModel } ?: availableModels[0]
                     try {
                         val intTimeoutSec = Integer.parseInt(timeoutSec)
                         if (intTimeoutSec > 0) options.timeoutSec = intTimeoutSec
@@ -70,9 +70,9 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                                 .fillMaxWidth()
                                 .height(56.dp)
                                 .selectable(
-                                    selected = (availableModels[it] == selectedModel),
+                                    selected = (availableModels[it].name == selectedModel),
                                     onClick = {
-                                        selectedModel = availableModels[it]
+                                        selectedModel = availableModels[it].name
                                     },
                                     role = Role.RadioButton
                                 )
@@ -80,11 +80,11 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = (availableModels[it] == selectedModel),
+                                selected = (availableModels[it].name == selectedModel),
                                 onClick = null // null recommended for accessibility with screenreaders
                             )
                             Text(
-                                text = availableModels[it],
+                                text = availableModels[it].name,
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.padding(start = 16.dp)
                             )

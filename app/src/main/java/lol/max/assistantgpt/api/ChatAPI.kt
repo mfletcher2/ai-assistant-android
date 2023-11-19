@@ -1,18 +1,14 @@
 package lol.max.assistantgpt.api
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.ResolveInfo
 import android.util.Log
-import androidx.compose.material3.SnackbarHostState
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
+import com.knuddels.jtokkit.Encodings
+import com.knuddels.jtokkit.api.Encoding
 import com.theokanning.openai.client.OpenAiApi
 import com.theokanning.openai.completion.chat.ChatCompletionRequest
-import com.theokanning.openai.completion.chat.ChatFunction
 import com.theokanning.openai.completion.chat.ChatMessage
-import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.FunctionExecutor
 import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.defaultClient
@@ -20,37 +16,13 @@ import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
 import com.theokanning.openai.service.OpenAiService.defaultRetrofit
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import java.lang.ref.WeakReference
-import java.time.DayOfWeek
 import java.time.Duration
-import java.util.Calendar
 
 
 class ChatAPI(
     apiKey: String,
     timeoutSec: Long = 60,
-    context: WeakReference<Context> = WeakReference(null)
 ) {
-    private val getAppsListFunction = ChatFunction.builder()
-        .name("get_apps_list")
-        .description("Get a list of installed applications.")
-        .executor(PackageListRequest::class.java) { it.getPackages(context.get()) }
-        .build()
-    private val launchPackageFunction = ChatFunction.builder()
-        .name("launch_package")
-        .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether or not it was successful.")
-        .executor(PackageRunRequest::class.java) { it.runPackage(context.get()) }
-        .build()
-    private val getDateAndTimeFunction = ChatFunction.builder()
-        .name("get_date_and_time")
-        .description("Get the current date and time in the user's local time zone.")
-        .executor(DateAndTimeRequest::class.java) { it.getDateAndTime() }
-        .build()
-
-    private val functionList =
-        listOf(cseChatFunction, getAppsListFunction, launchPackageFunction, weatherChatFunction, getDateAndTimeFunction)
-    private val functionExecutor = FunctionExecutor(functionList)
-
     private var mapper: ObjectMapper = defaultObjectMapper()
     private var client: OkHttpClient = defaultClient(apiKey, Duration.ofSeconds(timeoutSec))
         .newBuilder()
@@ -60,110 +32,87 @@ class ChatAPI(
     private var api: OpenAiApi = retrofit.create(OpenAiApi::class.java)
     private var service: OpenAiService = OpenAiService(api)
 
+    private var encodingRegistry = Encodings.newLazyEncodingRegistry()
 
-    suspend fun getCompletion(
-        chatMessages: List<ChatMessage>,
-        model: String,
-        snackbarHostState: SnackbarHostState? = null
-    ): List<ChatMessage> {
-        val newMessages: ArrayList<ChatMessage> = arrayListOf()
+
+    fun getCompletion(
+        chatMessages: ArrayList<ChatMessage>,
+        model: GPTModel,
+        context: Context,
+        showMessage: (String) -> Unit
+    ): ArrayList<ChatMessage> {
+        val messagesListCopy = ArrayList(chatMessages)
+
+        countTokensAndTruncate(
+            messagesListCopy,
+            encodingRegistry.getEncodingForModel(model.name).get(),
+            model.maxTokens
+        )
+
+        val functionExecutor = FunctionExecutor(Functions(context).getFunctionList())
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
-            .messages(chatMessages)
-            .model(model)
+            .messages(messagesListCopy)
+            .model(model.name)
             .n(1)
             .temperature(0.5)
             .maxTokens(256)
             .functions(functionExecutor.functions)
             .build()
+
         try {
             val responseRequest = service.createChatCompletion(chatCompletionRequest).choices[0]
             val responseMessage = responseRequest.message
             Log.i("AssistantGPT", "GPT responded: ${responseMessage.content}")
             Log.i("AssistantGPT", "with stop reason: ${responseRequest.finishReason}")
-            newMessages.add(responseMessage)
+            messagesListCopy.add(responseMessage)
 
             val functionCall = responseMessage.functionCall
             if (functionCall != null) {
-                snackbarHostState?.showSnackbar("${functionCall.name}(${functionCall.arguments})")
+                showMessage("${functionCall.name}${functionCall.arguments.toPrettyString()}")
                 Log.i(
                     "AssistantGPT",
-                    "GPT is running this function: ${functionCall.name}(${functionCall.arguments})"
+                    "GPT is running this function: ${functionCall.name}${functionCall.arguments}"
                 )
                 val functionResponseMessage =
                     functionExecutor.executeAndConvertToMessageHandlingExceptions(responseMessage.functionCall)
-                newMessages.add(functionResponseMessage)
-                chatCompletionRequest.messages.addAll(newMessages)
-                newMessages.addAll(
-                    getCompletion(
-                        chatCompletionRequest.messages,
-                        model,
-                        snackbarHostState
-                    )
+                Log.i("AssistantGPT", "Function response: ${functionResponseMessage.content}")
+                messagesListCopy.add(functionResponseMessage)
+                getCompletion(
+                    messagesListCopy,
+                    model,
+                    context,
+                    showMessage
                 )
             }
         } catch (e: RuntimeException) {
             e.printStackTrace()
-            newMessages.add(
-                ChatMessage(
-                    ChatMessageRole.ASSISTANT.value(),
-                    "Sorry, an error occured.\n${e.message}"
-                )
-            )
+            showMessage("Sorry, an error occured.\n${e.message}")
         }
-        return newMessages
+        return messagesListCopy
     }
-}
 
-class PackageListRequest {
-    fun getPackages(context: Context?): List<PackageResult> {
-        if (context == null)
-            return listOf()
-
-        val mainIntent = Intent(Intent.ACTION_MAIN, null)
-        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
-        val pkgAppsList: List<ResolveInfo> =
-            context.packageManager.queryIntentActivities(mainIntent, 0)
-
-        val resultList = ArrayList<PackageResult>()
-        pkgAppsList.forEach {
-            resultList.add(
-                PackageResult(
-                    it.loadLabel(context.packageManager).toString(),
-                    it.activityInfo.packageName
-                )
-            )
+    private fun countTokensAndTruncate(
+        list: ArrayList<ChatMessage>,
+        encoding: Encoding,
+        maxTokens: Int
+    ) {
+        val listStr = Gson().toJson(list)
+        val numTokens = encoding.countTokens(listStr)
+        Log.i("ChatAPI", "Number of tokens: $numTokens")
+        if (numTokens > maxTokens) {
+            Log.i("ChatAPI", "Too many tokens, truncating messages")
+            list.removeAt(0)
+            countTokensAndTruncate(list, encoding, maxTokens)
         }
-        return resultList
     }
 }
 
-data class PackageResult(val appName: String, val packageName: String)
+data class GPTModel(val name: String, val maxTokens: Int)
 
-class PackageRunRequest {
-    @JsonPropertyDescription("Name of the package to run")
-    @JsonProperty(required = true)
-    lateinit var packageName: String
-    fun runPackage(context: Context?): Boolean {
-        if (context == null) return false
-        val i = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
-        i.addCategory(Intent.CATEGORY_LAUNCHER)
-        context.startActivity(i)
-        return true
-    }
-}
+val availableModels = listOf(
+    GPTModel("gpt-3.5-turbo", 4096),
+    GPTModel("gpt-3.5-turbo-16k", 16385),
+    GPTModel("gpt-4", 8192)
+)
 
-class DateAndTimeRequest {
-    fun getDateAndTime(): DateAndTime {
-        val calendar = Calendar.getInstance()
-        return DateAndTime(
-            DayOfWeek.of(calendar.get(Calendar.DAY_OF_WEEK)).name,
-            calendar.get(Calendar.DAY_OF_MONTH),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE),
-            calendar.get(Calendar.SECOND))
-    }
-}
-data class DateAndTime(val dayOfWeek: String, val dayOfMonth: Int, val month: Int, val year: Int, val hour: Int, val minute: Int, val second: Int)

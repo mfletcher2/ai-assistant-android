@@ -1,5 +1,6 @@
 package lol.max.assistantgpt.ui
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -10,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun InfoDialog(onDismissRequest: () -> Unit = {}) {
@@ -29,10 +32,12 @@ Geocoding API provided by Google
                         
 openai-java © TheoKanning
 Retrofit and OkHttp © Square
+jtokkit © Knuddels
 Android libraries © Android Open Source Project
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.""",
-                Modifier.verticalScroll(rememberScrollState())
+                Modifier.verticalScroll(rememberScrollState()).padding(8.dp)
             )
-        })
+        }, properties = DialogProperties(usePlatformDefaultWidth = false)
+    )
 }

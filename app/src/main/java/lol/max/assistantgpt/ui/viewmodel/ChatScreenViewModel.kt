@@ -6,11 +6,13 @@ import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.google.gson.Gson
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.CoroutineScope
@@ -23,12 +25,12 @@ import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.ChatAPI
+import lol.max.assistantgpt.api.GPTModel
+import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.DialogTypes
-import lol.max.assistantgpt.ui.availableModels
-import java.lang.ref.WeakReference
 
 data class ChatScreenUiState(
-    val chatList: List<ChatMessage> = arrayListOf(),
+    val chatList: ArrayList<ChatMessage> = arrayListOf(),
     val enableButtons: Boolean = true,
     val enableWaitingIndicator: Boolean = false,
 )
@@ -37,15 +39,19 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(ChatScreenUiState())
     val uiState: StateFlow<ChatScreenUiState> = _uiState.asStateFlow()
 
-    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, context = WeakReference(application))
-
+    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
 
     private val sharedPreferences = application.applicationContext.getSharedPreferences(
         application.getString(R.string.app_name),
         Context.MODE_PRIVATE
     )
     val options = Options(
-        model = sharedPreferences.getString("model", Options.Default.model)!!,
+        model = Gson().fromJson(
+            sharedPreferences.getString(
+                "model",
+                Gson().toJson(Options.Default.model)
+            )!!, GPTModel::class.java
+        ),
         timeoutSec = sharedPreferences.getInt("timeoutSec", Options.Default.timeoutSec),
         openAiKey = sharedPreferences.getString("openAiKey", Options.Default.openAiKey)!!,
         googleKey = sharedPreferences.getString("googleKey", Options.Default.googleKey)!!,
@@ -68,11 +74,13 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         onSuccess: (String) -> Unit
     ) {
         if (chatInput == "") return
+        val newChatList = _uiState.value.chatList
+        newChatList.add(ChatMessage(ChatMessageRole.USER.value(), chatInput.trim()))
         _uiState.update {
             it.copy(
                 enableButtons = false,
                 enableWaitingIndicator = true,
-                chatList = it.chatList + ChatMessage(ChatMessageRole.USER.value(), chatInput.trim())
+                chatList = newChatList
             )
         }
 
@@ -83,14 +91,18 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 chatApi.getCompletion(
                     _uiState.value.chatList,
                     options.model,
-                    snackbarHostState
-                )
+                    getApplication(),
+                ) {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+                    }
+                }
 
             _uiState.update {
                 it.copy(
                     enableButtons = true,
                     enableWaitingIndicator = false,
-                    chatList = it.chatList + newMessages
+                    chatList = newMessages
                 )
             }
             onSuccess(newMessages[newMessages.size - 1].content)
@@ -136,7 +148,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun setMessagesList(list: List<ChatMessage>) {
+    fun setMessagesList(list: ArrayList<ChatMessage>) {
         _uiState.update {
             it.copy(
                 chatList = list
@@ -153,7 +165,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun saveSharedPreferences() {
         val e = sharedPreferences.edit()
-        e.putString("model", options.model)
+        e.putString("model", Gson().toJson(options.model))
         e.putInt("timeoutSec", options.timeoutSec)
         e.putString("openAiKey", options.openAiKey)
         e.putString("googleKey", options.googleKey)
@@ -163,7 +175,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
 }
 
 class Options(
-    var model: String,
+    var model: GPTModel,
     var timeoutSec: Int,
     var openAiKey: String,
     var googleKey: String,
