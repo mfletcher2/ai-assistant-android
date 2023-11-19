@@ -8,6 +8,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -33,6 +34,7 @@ data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
     val enableButtons: Boolean = true,
     val enableWaitingIndicator: Boolean = false,
+    val newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 )
 
 class ChatScreenViewModel(application: Application) : AndroidViewModel(application) {
@@ -104,7 +106,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 it.copy(
                     enableButtons = true,
                     enableWaitingIndicator = false,
-                    chatList = newMessages
+                    chatList = newMessages,
+                    newMessageAnimated = mutableStateOf(false)
                 )
             }
             onSuccess(newMessages[newMessages.size - 1].content)

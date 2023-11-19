@@ -49,8 +49,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -173,7 +175,8 @@ fun ChatScreen(
         ) {
             ChatMessageConversation(
                 chatMessages = uiState.chatList,
-                showLoading = uiState.enableWaitingIndicator
+                showLoading = uiState.enableWaitingIndicator,
+                newMessageAnimated = uiState.newMessageAnimated
             )
         }
         if (viewModel.showDialog == DialogTypes.SETTINGS)
@@ -237,6 +240,7 @@ fun MessageCard(msg: ChatMessage) {
 fun Conversation(
     messages: List<ChatMessage>,
     showLoading: Boolean = false,
+    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 ) {
     val listState = rememberLazyListState()
     if(messages.isNotEmpty())
@@ -246,9 +250,10 @@ fun Conversation(
     LazyColumn(state = listState) {
         itemsIndexed(messages) { i, message ->
             val state = remember {
-                MutableTransitionState(i != messages.size - 1).apply {
+                MutableTransitionState(i != messages.size - 1 || newMessageAnimated.value).apply {
                     // Start the animation immediately.
                     targetState = true
+                    newMessageAnimated.value = true
                 }
             }
 
@@ -277,8 +282,13 @@ fun Conversation(
 fun ChatMessageConversation(
     chatMessages: List<ChatMessage>,
     showLoading: Boolean = false,
+    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 ) {
-    Conversation(messages = chatMessages, showLoading = showLoading)
+    Conversation(
+        messages = chatMessages,
+        showLoading = showLoading,
+        newMessageAnimated = newMessageAnimated
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
