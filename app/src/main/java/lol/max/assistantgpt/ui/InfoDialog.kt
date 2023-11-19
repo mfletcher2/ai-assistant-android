@@ -32,11 +32,13 @@ Geocoding API provided by Google
                         
 openai-java © TheoKanning
 Retrofit and OkHttp © Square
-jtokkit © Knuddels
+JTokkit © Knuddels
 Android libraries © Android Open Source Project
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.""",
-                Modifier.verticalScroll(rememberScrollState()).padding(8.dp)
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(8.dp)
             )
         }, properties = DialogProperties(usePlatformDefaultWidth = false)
     )

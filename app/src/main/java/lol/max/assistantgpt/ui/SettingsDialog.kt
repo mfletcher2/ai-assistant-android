@@ -1,5 +1,6 @@
 package lol.max.assistantgpt.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import lol.max.assistantgpt.api.availableModels
@@ -42,7 +45,9 @@ enum class DialogTypes {
 fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest: () -> Unit = {}) {
     var selectedModel by rememberSaveable { mutableStateOf(options.model.name) }
     var timeoutSec by rememberSaveable { mutableStateOf(options.timeoutSec.toString()) }
-    AlertDialog(onDismissRequest = { onDismissRequest() },
+    var allowSensors by rememberSaveable { mutableStateOf(options.allowSensors) }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(
                 onClick = {
@@ -53,6 +58,7 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                         if (intTimeoutSec > 0) options.timeoutSec = intTimeoutSec
                     } catch (_: NumberFormatException) {
                     }
+                    options.allowSensors = allowSensors
                     onSaveRequest()
                     onDismissRequest()
                 },
@@ -102,8 +108,42 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                         label = { Text(text = "Timeout seconds") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.padding(0.dp, 8.dp)
+                        modifier = Modifier.padding(16.dp, 8.dp)
                     )
+                }
+                item {
+                    Text(text = "Privacy")
+                }
+                item {
+                    Row(
+                        Modifier
+                            .selectableGroup()
+                            .height(56.dp)
+                            .selectable(
+                                selected = allowSensors,
+                                onClick = { allowSensors = !allowSensors },
+                                role = Role.Switch
+                            )
+                            .padding(vertical = 16.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Allow sensors",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Switch(
+                                checked = allowSensors,
+                                onCheckedChange = null,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                    }
                 }
             }
 

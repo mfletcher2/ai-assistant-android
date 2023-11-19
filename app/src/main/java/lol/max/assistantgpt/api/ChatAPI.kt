@@ -39,9 +39,10 @@ class ChatAPI(
         chatMessages: ArrayList<ChatMessage>,
         model: GPTModel,
         context: Context,
+        allowSensors: Boolean,
         showMessage: (String) -> Unit
     ): ArrayList<ChatMessage> {
-        val messagesListCopy = ArrayList(chatMessages)
+        var messagesListCopy = ArrayList(chatMessages)
 
         countTokensAndTruncate(
             messagesListCopy,
@@ -49,7 +50,7 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val functionExecutor = FunctionExecutor(Functions(context).getFunctionList())
+        val functionExecutor = FunctionExecutor(Functions(context).getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
             .messages(messagesListCopy)
@@ -80,10 +81,11 @@ class ChatAPI(
                     functionExecutor.executeAndConvertToMessageHandlingExceptions(responseMessage.functionCall)
                 Log.i("AssistantGPT", "Function response: ${functionResponseMessage.content}")
                 messagesListCopy.add(functionResponseMessage)
-                getCompletion(
+                messagesListCopy = getCompletion(
                     messagesListCopy,
                     model,
                     context,
+                    allowSensors,
                     showMessage
                 )
             }

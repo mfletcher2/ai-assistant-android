@@ -59,6 +59,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             "googleSearchId",
             Options.Default.googleSearchId
         )!!,
+        allowSensors = sharedPreferences.getBoolean("allowSensors", Options.Default.allowSensors)
     )
 
     var chatInput by mutableStateOf("")
@@ -92,6 +93,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                     _uiState.value.chatList,
                     options.model,
                     getApplication(),
+                    allowSensors = options.allowSensors
                 ) {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
@@ -170,6 +172,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("openAiKey", options.openAiKey)
         e.putString("googleKey", options.googleKey)
         e.putString("googleSearchId", options.googleSearchId)
+        e.putBoolean("allowSensors", options.allowSensors)
         e.apply()
     }
 }
@@ -179,7 +182,8 @@ class Options(
     var timeoutSec: Int,
     var openAiKey: String,
     var googleKey: String,
-    var googleSearchId: String
+    var googleSearchId: String,
+    var allowSensors: Boolean
 ) {
 
     companion object {
@@ -188,7 +192,8 @@ class Options(
             timeoutSec = 60,
             openAiKey = "",
             googleKey = "",
-            googleSearchId = ""
+            googleSearchId = "",
+            allowSensors = false
         )
     }
 }

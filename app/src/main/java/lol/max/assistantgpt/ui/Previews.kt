@@ -107,7 +107,7 @@ fun PreviewOptionsDialog() {
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PreviewInfoDialog() {
     AssistantGPTTheme {
