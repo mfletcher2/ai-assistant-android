@@ -8,6 +8,7 @@ import com.knuddels.jtokkit.api.Encoding
 import com.theokanning.openai.client.OpenAiApi
 import com.theokanning.openai.completion.chat.ChatCompletionRequest
 import com.theokanning.openai.completion.chat.ChatMessage
+import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.FunctionExecutor
 import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.defaultClient
@@ -92,6 +93,8 @@ class ChatAPI(
         } catch (e: RuntimeException) {
             e.printStackTrace()
             showMessage("Sorry, an error occured.\n${e.message}")
+            while (messagesListCopy.size > 0 && messagesListCopy.last().role != ChatMessageRole.ASSISTANT.value())
+                messagesListCopy.removeLast()
         }
         return messagesListCopy
     }
