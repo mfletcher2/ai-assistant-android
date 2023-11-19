@@ -28,11 +28,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
+import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.viewmodel.Options
 
@@ -62,13 +64,13 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     onSaveRequest()
                     onDismissRequest()
                 },
-                content = { Text(text = "Save and Close") })
+                content = { Text(text = stringResource(R.string.save_and_close)) })
         },
-        title = { Text(text = "Options") },
+        title = { Text(text = stringResource(R.string.options)) },
         icon = { Icon(imageVector = Icons.Filled.Settings, contentDescription = "Icon") },
         text = {
             LazyColumn {
-                item { Text(text = "Model") }
+                item { Text(text = stringResource(R.string.model)) }
                 items(count = availableModels.size) {
                     Column(Modifier.selectableGroup()) {
                         Row(
@@ -99,20 +101,20 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     }
                 }
                 item {
-                    Text(text = "API")
+                    Text(text = stringResource(R.string.api))
                 }
                 item {
                     TextField(
                         value = timeoutSec,
                         onValueChange = { if (it.isDigitsOnly()) timeoutSec = it },
-                        label = { Text(text = "Timeout seconds") },
+                        label = { Text(text = stringResource(R.string.timeout_seconds)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.padding(16.dp, 8.dp)
                     )
                 }
                 item {
-                    Text(text = "Privacy")
+                    Text(text = stringResource(R.string.privacy))
                 }
                 item {
                     Row(
@@ -128,7 +130,7 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                             .fillMaxWidth()
                     ) {
                         Text(
-                            text = "Allow sensors",
+                            text = stringResource(R.string.allow_sensors),
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Start,
                             modifier = Modifier.padding(horizontal = 16.dp)

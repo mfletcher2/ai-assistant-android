@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name_localized">アシスタントGPT</string>
+    <string name="microphone_access_required">マイクラフォンが必要です</string>
+    <string name="save_and_close">セーブして閉じる</string>
+    <string name="options">オプション</string>
+    <string name="model">モデル</string>
+    <string name="api">API</string>
+    <string name="timeout_seconds">タイムアウト(秒）</string>
+    <string name="allow_sensors">センサー使う</string>
+    <string name="privacy">プライバシー</string>
+    <string name="info_dialog">このアプチはOpenAIからのGPTのAPIを使っています。OpenAI公式のアプリではありません。\n\nウェブサーチは「Google Custom Search Engine」から提供されています。 \n天気用法は「National Weather Service」から提供されています。 \n「Geocoding API」はグーグルから提供されています。    \n\nopenai-java © TheoKanning  \nRetrofitとOkHttp © Square  \nJTokkit © Knuddels  \nAndroid libraries © Android Open Source Project   \n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</string>
+    <string name="about">当アプリについて</string>
+    <string name="close">閉じる</string>
+</resources>

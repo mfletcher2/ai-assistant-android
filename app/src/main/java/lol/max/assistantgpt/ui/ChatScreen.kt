@@ -94,11 +94,14 @@ fun ChatScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
 
+    val micReq = stringResource(id = R.string.microphone_access_required)
+
     fun speakText(string: String) {
         tts?.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
     }
     stt?.setRecognitionListener(
-        RecognitionListener({ viewModel.updateChatInput(it) },
+        RecognitionListener(
+            { viewModel.updateChatInput(it) },
             {
                 viewModel.endVoiceChatInput(
                     it,
@@ -126,7 +129,7 @@ fun ChatScreen(
                     if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
                         Toast.makeText(
                             activity,
-                            "Microphone access is required",
+                            micReq,
                             Toast.LENGTH_SHORT
                         ).show()
                         activity.requestPermissions(
@@ -141,7 +144,8 @@ fun ChatScreen(
             )
         }
     }, topBar = {
-        TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) },
+        TopAppBar(
+            title = { Text(text = stringResource(R.string.app_name_localized)) },
             colors = TopAppBarDefaults.smallTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = MaterialTheme.colorScheme.onPrimary
