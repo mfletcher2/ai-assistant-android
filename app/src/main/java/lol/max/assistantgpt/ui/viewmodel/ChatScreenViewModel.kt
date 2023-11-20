@@ -120,6 +120,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 enableButtons = false
             )
         }
+        updateShowDialog(DialogTypes.VOICE)
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             i.putExtra(
@@ -141,6 +142,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         snackbarHostState: SnackbarHostState,
         onSuccess: (String) -> Unit
     ) {
+        updateShowDialog(DialogTypes.NONE)
         if (statusCode == 0 && chatInput != "") {
             sendChatInput(
                 snackbarHostState,

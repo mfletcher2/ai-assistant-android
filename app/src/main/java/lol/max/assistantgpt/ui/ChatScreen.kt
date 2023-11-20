@@ -68,6 +68,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
@@ -184,15 +185,27 @@ fun ChatScreen(
             if (uiState.enableWaitingIndicator)
                 LinearProgressIndicator(Modifier.fillMaxWidth())
         }
-        if (viewModel.showDialog == DialogTypes.SETTINGS)
-            SettingsDialog(options = viewModel.options, {
-                viewModel.updateShowDialog(
-                    DialogTypes.NONE
-                )
-            }, { viewModel.saveSharedPreferences() })
-        else if (viewModel.showDialog == DialogTypes.INFO)
-            InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
     }
+    when (viewModel.showDialog) {
+        DialogTypes.SETTINGS -> SettingsDialog(options = viewModel.options, {
+            viewModel.updateShowDialog(
+                DialogTypes.NONE
+            )
+        }, { viewModel.saveSharedPreferences() })
+
+        DialogTypes.INFO -> InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
+        DialogTypes.VOICE -> Dialog(onDismissRequest = {}) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_mic_24),
+                contentDescription = "Microphone",
+                modifier = Modifier.size(128.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        else -> return
+    }
+
 }
 
 @Composable

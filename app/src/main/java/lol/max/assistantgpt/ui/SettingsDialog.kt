@@ -39,7 +39,7 @@ import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.viewmodel.Options
 
 enum class DialogTypes {
-    NONE, SETTINGS, INFO;
+    NONE, SETTINGS, INFO, VOICE;
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
