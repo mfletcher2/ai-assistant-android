@@ -1,7 +1,8 @@
 package lol.max.assistantgpt.api
 
-import android.content.Context
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.knuddels.jtokkit.Encodings
 import com.knuddels.jtokkit.api.Encoding
@@ -9,7 +10,6 @@ import com.theokanning.openai.client.OpenAiApi
 import com.theokanning.openai.completion.chat.ChatCompletionRequest
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
-import com.theokanning.openai.service.FunctionExecutor
 import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.defaultClient
 import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
@@ -17,16 +17,18 @@ import com.theokanning.openai.service.OpenAiService.defaultRetrofit
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import java.time.Duration
+import kotlin.concurrent.thread
 
 
 class ChatAPI(
-    apiKey: String,
-    timeoutSec: Long = 60,
+    private var apiKey: String,
+    private var timeoutSec: Int = 60,
 ) {
     private var mapper: ObjectMapper = defaultObjectMapper()
-    private var client: OkHttpClient = defaultClient(apiKey, Duration.ofSeconds(timeoutSec))
-        .newBuilder()
-        .build()
+    private var client: OkHttpClient =
+        defaultClient(apiKey, Duration.ofSeconds(timeoutSec.toLong()))
+            .newBuilder()
+            .build()
     private var retrofit: Retrofit = defaultRetrofit(client, mapper)
 
     private var api: OpenAiApi = retrofit.create(OpenAiApi::class.java)
@@ -39,11 +41,13 @@ class ChatAPI(
     fun getCompletion(
         chatMessages: ArrayList<ChatMessage>,
         model: GPTModel,
-        context: Context,
+        context: ComponentActivity,
         allowSensors: Boolean,
-        showMessage: (String) -> Unit
-    ): ArrayList<ChatMessage> {
-        var messagesListCopy = ArrayList(chatMessages)
+        requestPermissionLauncher: ActivityResultLauncher<String>,
+        showMessage: (String) -> Unit,
+        updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
+    ) {
+        val messagesListCopy = ArrayList(chatMessages)
 
         countTokensAndTruncate(
             messagesListCopy,
@@ -51,7 +55,8 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val functionExecutor = FunctionExecutor(Functions(context).getFunctionList(allowSensors))
+        val functionsObj = Functions(context)
+        val functionExecutor = FunctionExecutor(functionsObj.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
             .messages(messagesListCopy)
@@ -78,25 +83,40 @@ class ChatAPI(
                     "AssistantGPT",
                     "GPT is running this function: ${functionCall.name}${functionCall.arguments}"
                 )
-                val functionResponseMessage =
-                    functionExecutor.executeAndConvertToMessageHandlingExceptions(responseMessage.functionCall)
-                Log.i("AssistantGPT", "Function response: ${functionResponseMessage.content}")
-                messagesListCopy.add(functionResponseMessage)
-                messagesListCopy = getCompletion(
-                    messagesListCopy,
-                    model,
-                    context,
-                    allowSensors,
-                    showMessage
-                )
-            }
+                functionExecutor.executeAndConvertToMessage(
+                    responseMessage.functionCall,
+                    functionsObj,
+                    requestPermissionLauncher
+                ) {
+                    thread {
+                        Log.i(
+                            "AssistantGPT",
+                            "Function response: ${it.content}"
+                        )
+                        messagesListCopy.add(it)
+                        getCompletion(
+                            messagesListCopy,
+                            model,
+                            context,
+                            allowSensors,
+                            requestPermissionLauncher,
+                            showMessage,
+                            updateChatMessageList
+                        )
+                    }
+                }
+            } else updateChatMessageList(messagesListCopy)
         } catch (e: RuntimeException) {
             e.printStackTrace()
-            showMessage("Sorry, an error occured.\n${e.message}")
-            while (messagesListCopy.size > 0 && messagesListCopy.last().role != ChatMessageRole.ASSISTANT.value())
-                messagesListCopy.removeLast()
+            e.message?.let { showMessage(it) }
+            removeUnusedMessages(messagesListCopy)
+            updateChatMessageList(messagesListCopy)
         }
-        return messagesListCopy
+    }
+
+    private fun removeUnusedMessages(list: ArrayList<ChatMessage>) {
+        while (list.size > 0 && list.last().role != ChatMessageRole.ASSISTANT.value())
+            list.removeLast()
     }
 
     private fun countTokensAndTruncate(
@@ -113,13 +133,25 @@ class ChatAPI(
             countTokensAndTruncate(list, encoding, maxTokens)
         }
     }
+
+    fun setTimeoutSec(timeoutSec: Int) {
+        if (timeoutSec != this.timeoutSec) {
+            this.timeoutSec = timeoutSec
+            client = defaultClient(apiKey, Duration.ofSeconds(timeoutSec.toLong()))
+                .newBuilder()
+                .build()
+            retrofit = defaultRetrofit(client, mapper)
+
+            api = retrofit.create(OpenAiApi::class.java)
+            service = OpenAiService(api)
+        }
+    }
 }
 
 data class GPTModel(val name: String, val maxTokens: Int)
 
 val availableModels = listOf(
     GPTModel("gpt-3.5-turbo", 4096),
-    GPTModel("gpt-3.5-turbo-16k", 16385),
-    GPTModel("gpt-4", 8192)
+    GPTModel("gpt-4", 4096)
 )
 

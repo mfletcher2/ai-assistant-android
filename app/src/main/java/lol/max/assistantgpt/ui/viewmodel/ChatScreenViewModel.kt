@@ -6,6 +6,8 @@ import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.MutableState
@@ -41,12 +43,12 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(ChatScreenUiState())
     val uiState: StateFlow<ChatScreenUiState> = _uiState.asStateFlow()
 
-    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY)
-
     private val sharedPreferences = application.applicationContext.getSharedPreferences(
         application.getString(R.string.app_name),
         Context.MODE_PRIVATE
     )
+    var requestPermissionLauncher: ActivityResultLauncher<String>? = null
+
     val options = Options(
         model = Gson().fromJson(
             sharedPreferences.getString(
@@ -64,6 +66,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         allowSensors = sharedPreferences.getBoolean("allowSensors", Options.Default.allowSensors)
     )
 
+    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
+
     var chatInput by mutableStateOf("")
         private set
 
@@ -72,6 +76,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun sendChatInput(
+        activity: ComponentActivity,
         snackbarHostState: SnackbarHostState,
         coroutineScope: CoroutineScope,
         onSuccess: (String) -> Unit
@@ -90,27 +95,28 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         chatInput = ""
 
         coroutineScope.launch(Dispatchers.IO) {
-            val newMessages =
-                chatApi.getCompletion(
-                    _uiState.value.chatList,
-                    options.model,
-                    getApplication(),
-                    allowSensors = options.allowSensors
-                ) {
+            chatApi.getCompletion(
+                chatMessages = _uiState.value.chatList,
+                model = options.model,
+                context = activity,
+                allowSensors = options.allowSensors,
+                requestPermissionLauncher = requestPermissionLauncher!!,
+                showMessage = {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
                     }
-                }
-
-            _uiState.update {
-                it.copy(
-                    enableButtons = true,
-                    enableWaitingIndicator = false,
-                    chatList = newMessages,
-                    newMessageAnimated = mutableStateOf(false)
-                )
-            }
-            onSuccess(newMessages[newMessages.size - 1].content)
+                }, updateChatMessageList = { list ->
+                    _uiState.update {
+                        it.copy(
+                            enableButtons = true,
+                            enableWaitingIndicator = false,
+                            chatList = list,
+                            newMessageAnimated = mutableStateOf(false)
+                        )
+                    }
+                    if (list.isNotEmpty() && list.last().content != null)
+                        onSuccess(list.last().content)
+                })
         }
     }
 
@@ -138,6 +144,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun endVoiceChatInput(
+        activity: ComponentActivity,
         statusCode: Int, coroutineScope: CoroutineScope,
         snackbarHostState: SnackbarHostState,
         onSuccess: (String) -> Unit
@@ -145,6 +152,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         updateShowDialog(DialogTypes.NONE)
         if (statusCode == 0 && chatInput != "") {
             sendChatInput(
+                activity,
                 snackbarHostState,
                 coroutineScope
             ) { onSuccess(_uiState.value.chatList[_uiState.value.chatList.size - 1].content) }
@@ -179,6 +187,10 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("googleSearchId", options.googleSearchId)
         e.putBoolean("allowSensors", options.allowSensors)
         e.apply()
+    }
+
+    fun updateTimeoutSec() {
+        chatApi.setTimeoutSec(options.timeoutSec)
     }
 }
 

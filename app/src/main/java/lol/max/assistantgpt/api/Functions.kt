@@ -1,5 +1,6 @@
 package lol.max.assistantgpt.api
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
@@ -11,28 +12,43 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 class Functions(context: Context) {
-    private val contextRef = WeakReference(context)
+    val contextRef = WeakReference(context)
 
-    private val getAppsListFunction = ChatFunction.builder()
+    private val appsListChatFunction = ChatFunction.builder()
         .name("get_apps_list")
         .description("Get a list of installed applications.")
         .executor(PackageListRequest::class.java) { it.getPackages(contextRef.get()) }
         .build()
-    private val launchPackageFunction = ChatFunction.builder()
+    private val launchPackageChatFunction = ChatFunction.builder()
         .name("launch_package")
         .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether the launch was successful.")
         .executor(PackageRunRequest::class.java) { it.runPackage(contextRef.get()) }
         .build()
-    private val getDateAndTimeFunction = ChatFunction.builder()
+    private val dateAndTimeChatFunction = ChatFunction.builder()
         .name("get_date_and_time")
         .description("Get the current date and time in the user's local time zone.")
         .executor(DateAndTimeRequest::class.java) { it.getDateAndTime() }
         .build()
+    private val weatherByLocationChatFunction: ChatFunction = ChatFunction.builder()
+        .name("get_weather_current_location")
+        .description("Get the weather forecast for the user's current location.")
+        .executor(WeatherByLatLonAPI::class.java) { it.getWeatherFromLocation(contextRef.get()) }
+        .build()
 
     fun getFunctionList(allowSensors: Boolean = true): List<ChatFunction> {
-        return if(allowSensors) listOf(cseChatFunction, getAppsListFunction, launchPackageFunction, weatherChatFunction, getDateAndTimeFunction)
-        else listOf(cseChatFunction, weatherChatFunction, getDateAndTimeFunction)
+        return if (allowSensors) listOf(
+            cseChatFunction,
+            appsListChatFunction,
+            launchPackageChatFunction,
+            weatherChatFunction,
+            weatherByLocationChatFunction,
+            dateAndTimeChatFunction,
+        )
+        else listOf(cseChatFunction, weatherChatFunction, dateAndTimeChatFunction)
     }
+
+    val requiresPermission: Map<ChatFunction, String> =
+        mapOf(weatherByLocationChatFunction to Manifest.permission.ACCESS_COARSE_LOCATION)
 
     class PackageListRequest {
         fun getPackages(context: Context?): List<PackageResult> {
@@ -83,9 +99,22 @@ class Functions(context: Context) {
                 date.year,
                 time.hour,
                 time.minute,
-                time.second)
+                time.second
+            )
         }
     }
-    data class DateAndTime(val dayOfWeek: String, val dayOfMonth: Int, val month: Int, val year: Int, val hour: Int, val minute: Int, val second: Int)
 
+    data class DateAndTime(
+        val dayOfWeek: String,
+        val dayOfMonth: Int,
+        val month: Int,
+        val year: Int,
+        val hour: Int,
+        val minute: Int,
+        val second: Int
+    )
+
+    abstract class LateResponse {
+        var onSuccess: (result: Any) -> Unit = {}
+    }
 }

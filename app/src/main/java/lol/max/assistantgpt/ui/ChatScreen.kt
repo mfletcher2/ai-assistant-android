@@ -1,11 +1,12 @@
 package lol.max.assistantgpt.ui
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -82,29 +83,32 @@ import java.util.Random
 fun ChatScreen(
     tts: TextToSpeech?,
     stt: SpeechRecognizer?,
+    requestPermissionLauncher: ActivityResultLauncher<String>,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     val random = Random()
-    lateinit var activity: Activity
-    if (LocalContext.current is Activity)
-        activity = LocalContext.current as Activity
-
+    lateinit var activity: ComponentActivity
+    if (LocalContext.current is ComponentActivity)
+        activity = LocalContext.current as ComponentActivity
+    viewModel.requestPermissionLauncher = requestPermissionLauncher
 
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
 
     val micReq = stringResource(id = R.string.microphone_access_required)
 
-    fun speakText(string: String) {
-        tts?.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
+    fun speakText(string: String?) {
+        if (string != null)
+            tts?.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
     }
     stt?.setRecognitionListener(
         RecognitionListener(
             { viewModel.updateChatInput(it) },
             {
                 viewModel.endVoiceChatInput(
+                    activity,
                     it,
                     coroutineScope,
                     snackBarHostState
@@ -120,6 +124,7 @@ fun ChatScreen(
                 enableButton = uiState.enableButtons,
                 onClickSend = {
                     viewModel.sendChatInput(
+                        activity,
                         snackBarHostState,
                         coroutineScope
                     ) {
@@ -191,7 +196,7 @@ fun ChatScreen(
             viewModel.updateShowDialog(
                 DialogTypes.NONE
             )
-        }, { viewModel.saveSharedPreferences() })
+        }, { viewModel.updateTimeoutSec(); viewModel.saveSharedPreferences() })
 
         DialogTypes.INFO -> InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
         DialogTypes.VOICE -> Dialog(onDismissRequest = {}) {
@@ -316,7 +321,7 @@ fun ChatInput(
     ) {
         OutlinedTextField(
             value = inputText,
-            onValueChange = { onInputTextChanged(it) },
+            onValueChange = { if (enableButton) onInputTextChanged(it) },
             colors = TextFieldDefaults.textFieldColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier
                 .weight(1f)

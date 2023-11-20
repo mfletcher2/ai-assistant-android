@@ -1,8 +1,12 @@
 package lol.max.assistantgpt.api
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.theokanning.openai.completion.chat.ChatFunction
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -10,8 +14,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import kotlin.concurrent.thread
 
-val weatherChatFunction = ChatFunction.builder()
+val weatherChatFunction: ChatFunction = ChatFunction.builder()
     .name("get_weather")
     .description("Get the weather forecast for a location in the United States.")
     .executor(WeatherAPI::class.java) { it.getWeather(it.address) }
@@ -26,11 +31,6 @@ class WeatherAPI {
         .baseUrl("https://maps.googleapis.com/maps/api/").build()
     private val googleGeocodeService = retrofitGoogle.create(GoogleGeocodeService::class.java)
 
-    private val retrofitNWS = Retrofit.Builder()
-        .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl("https://api.weather.gov/").build()
-    private val nwsApiService = retrofitNWS.create(NWSAPIService::class.java)
-
     fun getWeather(address: String): List<Period> {
         val latLonRequest = googleGeocodeService.getLatLon(address).request()
         Log.i("WeatherAPI", "Doing geocode request: ${latLonRequest.url()}")
@@ -40,12 +40,40 @@ class WeatherAPI {
             "WeatherAPI",
             "Geocode service status code: ${latLonResponse.code()}: ${latLonResponse.message()}"
         )
-        if (latLonResponse.body()!!.status != "OK")
-            throw Exception("Geocode service error: ${latLonResponse.body()!!.status}")
+        if (latLonResponse.body()!!.status != "OK") {
+            Log.e("WeatherAPI", "Geocode service error: ${latLonResponse.body()!!.status}")
+            return listOf(Period("Error", 0, "", "Error", ""))
+        }
 
         val latitude = latLonResponse.body()!!.results[0].geometry.location.lat
         val longitude = latLonResponse.body()!!.results[0].geometry.location.lng
 
+        return WeatherByLatLonAPI().getWeather(latitude, longitude)
+    }
+}
+
+class WeatherByLatLonAPI : Functions.LateResponse() {
+    @SuppressLint("MissingPermission")
+
+    private val retrofitNWS = Retrofit.Builder()
+        .addConverterFactory(GsonConverterFactory.create())
+        .baseUrl("https://api.weather.gov/").build()
+    private val nwsApiService = retrofitNWS.create(NWSAPIService::class.java)
+
+    @SuppressLint("MissingPermission")
+    fun getWeatherFromLocation(context: Context?) {
+        if (context == null)
+            onSuccess("An error occurred.")
+        LocationServices.getFusedLocationProviderClient(context!!)
+            .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+            .addOnSuccessListener {
+                thread {
+                    onSuccess(getWeather(it.latitude.toFloat(), it.longitude.toFloat()))
+                }
+            }
+    }
+
+    fun getWeather(latitude: Float, longitude: Float): List<Period> {
         val stationRequest = nwsApiService.getStationInfo(latitude, longitude).request()
         Log.i("WeatherAPI", "Doing station request: ${stationRequest.url()}")
         val stationResponse = nwsApiService.getStationInfo(latitude, longitude).execute()
