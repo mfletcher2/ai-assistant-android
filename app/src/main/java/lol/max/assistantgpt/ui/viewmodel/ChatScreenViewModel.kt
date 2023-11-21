@@ -65,7 +65,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             "googleSearchId",
             Options.Default.googleSearchId
         )!!,
-        allowSensors = sharedPreferences.getBoolean("allowSensors", Options.Default.allowSensors)
+        allowSensors = sharedPreferences.getBoolean("allowSensors", Options.Default.allowSensors),
+        confirmSensors = sharedPreferences.getBoolean(
+            "confirmSensors",
+            Options.Default.confirmSensors
+        )
     )
 
     private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
@@ -201,6 +205,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("googleKey", options.googleKey)
         e.putString("googleSearchId", options.googleSearchId)
         e.putBoolean("allowSensors", options.allowSensors)
+        e.putBoolean("confirmSensors", options.confirmSensors)
         e.apply()
     }
 
@@ -215,7 +220,8 @@ class Options(
     var openAiKey: String,
     var googleKey: String,
     var googleSearchId: String,
-    var allowSensors: Boolean
+    var allowSensors: Boolean,
+    var confirmSensors: Boolean
 ) {
 
     companion object {
@@ -225,7 +231,8 @@ class Options(
             openAiKey = "",
             googleKey = "",
             googleSearchId = "",
-            allowSensors = false
+            allowSensors = false,
+            confirmSensors = true
         )
     }
 }

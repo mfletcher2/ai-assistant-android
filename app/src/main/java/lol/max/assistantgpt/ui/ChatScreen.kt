@@ -226,9 +226,11 @@ fun ChatScreen(
                 tint = MaterialTheme.colorScheme.primary
             )
         }
-
         DialogTypes.SENSOR ->
-            SensorRequestDialog(sensorRequest = viewModel.sensorRequest)
+            SensorRequestDialog(
+                sensorRequest = viewModel.sensorRequest,
+                !viewModel.options.confirmSensors
+            )
 
         DialogTypes.SENSOR_INFO ->
             SensorInfoDialog(sensorValues = sensorValues) { viewModel.updateShowDialog(DialogTypes.NONE) }
@@ -364,7 +366,8 @@ fun ChatInput(
                 KeyboardCapitalization.Sentences,
                 imeAction = ImeAction.Send
             ),
-            keyboardActions = KeyboardActions { onClickSend() }
+            keyboardActions = KeyboardActions { onClickSend() },
+            readOnly = !enableButton,
         )
         FilledIconButton(
             onClick = onClickSend,

@@ -1,6 +1,6 @@
 package lol.max.assistantgpt.ui.dialog
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,6 +49,7 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
     var selectedModel by rememberSaveable { mutableStateOf(options.model.name) }
     var timeoutSec by rememberSaveable { mutableStateOf(options.timeoutSec.toString()) }
     var allowSensors by rememberSaveable { mutableStateOf(options.allowSensors) }
+    var confirmSensors by rememberSaveable { mutableStateOf(options.confirmSensors) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
@@ -61,6 +63,7 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     } catch (_: NumberFormatException) {
                     }
                     options.allowSensors = allowSensors
+                    options.confirmSensors = confirmSensors
                     onSaveRequest()
                     onDismissRequest()
                 },
@@ -71,31 +74,25 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
         text = {
             LazyColumn {
                 item { Text(text = stringResource(R.string.model)) }
-                items(count = availableModels.size) {
+                items(count = availableModels.size) { i ->
                     Column(Modifier.selectableGroup()) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .selectable(
-                                    selected = (availableModels[it].name == selectedModel),
-                                    onClick = {
-                                        selectedModel = availableModels[it].name
-                                    },
-                                    role = Role.RadioButton
+                        OptionsItem(
+                            selected = availableModels[i].name == selectedModel,
+                            enabled = true,
+                            role = Role.RadioButton,
+                            onClick = { selectedModel = availableModels[i].name })
+                        {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = (availableModels[i].name == selectedModel),
+                                    onClick = null // null recommended for accessibility with screenreaders
                                 )
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (availableModels[it].name == selectedModel),
-                                onClick = null // null recommended for accessibility with screenreaders
-                            )
-                            Text(
-                                text = availableModels[it].name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
+                                Text(
+                                    text = availableModels[i].name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(8.dp, 0.dp)
+                                )
+                            }
                         }
 
                     }
@@ -117,32 +114,51 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     Text(text = stringResource(R.string.privacy))
                 }
                 item {
-                    Row(
-                        Modifier
-                            .selectableGroup()
-                            .height(56.dp)
-                            .selectable(
-                                selected = allowSensors,
-                                onClick = { allowSensors = !allowSensors },
-                                role = Role.Switch
-                            )
-                            .padding(vertical = 16.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Text(
-                            text = stringResource(R.string.allow_sensors),
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
+                    OptionsItem(
+                        selected = allowSensors,
+                        enabled = true,
+                        role = Role.Switch,
+                        onClick = { allowSensors = !allowSensors }) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            Text(
+                                text = stringResource(R.string.allow_sensors),
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Start,
+                            )
                             Switch(
                                 checked = allowSensors,
                                 onCheckedChange = null,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+
+                    }
+                }
+                item {
+                    OptionsItem(
+                        selected = confirmSensors,
+                        enabled = allowSensors,
+                        role = Role.Switch,
+                        onClick = { confirmSensors = !confirmSensors }) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            Arrangement.SpaceBetween,
+                            Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Confirm sensors",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (allowSensors) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.5f
+                                ),
+                            )
+                            Switch(
+                                checked = confirmSensors,
+                                onCheckedChange = null,
+                                enabled = allowSensors
                             )
                         }
                     }
@@ -150,4 +166,29 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
             }
 
         })
+}
+
+@Composable
+fun OptionsItem(
+    selected: Boolean,
+    enabled: Boolean,
+    role: Role?,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                onClick = onClick,
+                role = role
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        content()
+    }
 }

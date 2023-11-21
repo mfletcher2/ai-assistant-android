@@ -17,18 +17,29 @@ data class SensorRequest(
 )
 
 @Composable
-fun SensorRequestDialog(sensorRequest: SensorRequest) {
-    AlertDialog(
-        onDismissRequest = {},
-        confirmButton = {
-            TextButton(onClick = { sensorRequest.onGranted(); sensorRequest.onClose() }) {
-                Text(text = stringResource(R.string.allow))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { sensorRequest.onDenied(); sensorRequest.onClose() }) {
-                Text(text = stringResource(R.string.deny))
-            }
-        },
-        title = { Text(text = stringResource(R.string.sensor_request, sensorRequest.sensorName)) })
+fun SensorRequestDialog(sensorRequest: SensorRequest, skip: Boolean = false) {
+    if (!skip)
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {
+                TextButton(onClick = { sensorRequest.onGranted(); sensorRequest.onClose() }) {
+                    Text(text = stringResource(R.string.allow))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sensorRequest.onDenied(); sensorRequest.onClose() }) {
+                    Text(text = stringResource(R.string.deny))
+                }
+            },
+            title = {
+                Text(
+                    text = stringResource(
+                        R.string.sensor_request,
+                        sensorRequest.sensorName
+                    )
+                )
+            })
+    else {
+        sensorRequest.onClose(); sensorRequest.onGranted()
+    }
 }
