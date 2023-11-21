@@ -252,11 +252,13 @@ fun MessageCard(msg: ChatMessage) {
                 else RoundedCornerShape(msgCorner, msgCorner, 0.dp, msgCorner),
                 color = if (msg.role == ChatMessageRole.ASSISTANT.value()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer,
             ) {
-                Text(
-                    text = msg.content,
-                    modifier = Modifier.padding(8.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                SelectionContainer {
+                    Text(
+                        text = msg.content,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
