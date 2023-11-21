@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -73,8 +74,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.RecognitionListener
+import lol.max.assistantgpt.api.SensorValues
+import lol.max.assistantgpt.ui.dialog.DialogTypes
+import lol.max.assistantgpt.ui.dialog.InfoDialog
+import lol.max.assistantgpt.ui.dialog.SensorInfoDialog
+import lol.max.assistantgpt.ui.dialog.SensorRequestDialog
+import lol.max.assistantgpt.ui.dialog.SettingsDialog
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
 import java.util.Random
 
@@ -84,6 +92,7 @@ fun ChatScreen(
     tts: TextToSpeech?,
     stt: SpeechRecognizer?,
     requestPermissionLauncher: ActivityResultLauncher<String>,
+    sensorValues: MutableState<SensorValues>,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -111,7 +120,8 @@ fun ChatScreen(
                     activity,
                     it,
                     coroutineScope,
-                    snackBarHostState
+                    snackBarHostState,
+                    sensorValues.value
                 ) { str -> speakText(str) }
             })
     )
@@ -126,7 +136,8 @@ fun ChatScreen(
                     viewModel.sendChatInput(
                         activity,
                         snackBarHostState,
-                        coroutineScope
+                        coroutineScope,
+                        sensorValues.value
                     ) {
                         speakText(it)
                     }
@@ -156,6 +167,14 @@ fun ChatScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = MaterialTheme.colorScheme.onPrimary
             ), actions = {
+                if (BuildConfig.DEBUG)
+                    IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.SENSOR_INFO) }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_sensors_24),
+                            contentDescription = "Sensors",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.INFO) }) {
                     Icon(
                         imageVector = Icons.Filled.Info, contentDescription = "Info",
@@ -210,6 +229,9 @@ fun ChatScreen(
 
         DialogTypes.SENSOR ->
             SensorRequestDialog(sensorRequest = viewModel.sensorRequest)
+
+        DialogTypes.SENSOR_INFO ->
+            SensorInfoDialog(sensorValues = sensorValues) { viewModel.updateShowDialog(DialogTypes.NONE) }
 
         else -> return
     }

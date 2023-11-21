@@ -12,4 +12,8 @@
     <string name="info_dialog">This app is powered by OpenAI\'s GPT API. It is not an official app from OpenAI.\n                    \nWeb searches provided by the Google Custom Search Engine\nWeather provided by the National Weather Service\nGeocoding API provided by Google\n                        \nopenai-java © TheoKanning\nRetrofit and OkHttp © Square\nJTokkit © Knuddels\nAndroid libraries © Android Open Source Project\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</string>
     <string name="about">About</string>
     <string name="close">Close</string>
+    <string name="sensor_request">AssistantGPT wants to access %1$s</string>
+    <string name="allow">Allow</string>
+    <string name="deny">Deny</string>
+    <string name="sensor_values_title">Sensor Values</string>
 </resources>

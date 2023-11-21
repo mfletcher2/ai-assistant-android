@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.ui
+package lol.max.assistantgpt.ui.dialog
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState

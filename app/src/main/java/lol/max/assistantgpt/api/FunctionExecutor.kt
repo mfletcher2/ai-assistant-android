@@ -6,7 +6,7 @@ import com.theokanning.openai.completion.chat.ChatFunction
 import com.theokanning.openai.completion.chat.ChatFunctionCall
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
-import lol.max.assistantgpt.ui.SensorRequest
+import lol.max.assistantgpt.ui.dialog.SensorRequest
 
 class FunctionExecutor(functionList: List<ChatFunction>) {
     private val functionMap: HashMap<String, ChatFunction> = hashMapOf()
@@ -64,10 +64,10 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
                 )
                 onFinished(chatMessage)
             }
-            sensorRequest.permission = permissionPair.first
+            sensorRequest.permission = permissionPair.first ?: ""
             sensorRequest.sensorName = permissionPair.second
             sensorRequest.onGranted = {
-                if (permissionPair.first != "")
+                if (permissionPair.first != null)
                     permissionRequestLauncher.launch(permissionPair.first)
                 else
                     onGranted()
@@ -81,5 +81,4 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
         var onDenied: () -> Unit? = {}
         var onGranted: () -> Unit? = {}
     }
-
 }

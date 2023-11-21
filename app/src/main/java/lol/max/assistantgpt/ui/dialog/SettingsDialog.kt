@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.ui
+package lol.max.assistantgpt.ui.dialog
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +39,7 @@ import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.viewmodel.Options
 
 enum class DialogTypes {
-    NONE, SETTINGS, INFO, VOICE, SENSOR;
+    NONE, SETTINGS, INFO, VOICE, SENSOR, SENSOR_INFO;
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

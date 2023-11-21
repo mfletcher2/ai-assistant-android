@@ -29,9 +29,10 @@ import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.api.GPTModel
+import lol.max.assistantgpt.api.SensorValues
 import lol.max.assistantgpt.api.availableModels
-import lol.max.assistantgpt.ui.DialogTypes
-import lol.max.assistantgpt.ui.SensorRequest
+import lol.max.assistantgpt.ui.dialog.DialogTypes
+import lol.max.assistantgpt.ui.dialog.SensorRequest
 
 data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
@@ -88,6 +89,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         activity: ComponentActivity,
         snackbarHostState: SnackbarHostState,
         coroutineScope: CoroutineScope,
+        sensorValues: SensorValues,
         onSuccess: (String) -> Unit
     ) {
         if (chatInput == "") return
@@ -111,6 +113,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 allowSensors = options.allowSensors,
                 permissionRequestLauncher = requestPermissionLauncher!!,
                 sensorRequest = sensorRequest,
+                sensorValues = sensorValues,
                 showMessage = {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
@@ -157,6 +160,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         activity: ComponentActivity,
         statusCode: Int, coroutineScope: CoroutineScope,
         snackbarHostState: SnackbarHostState,
+        sensorValues: SensorValues,
         onSuccess: (String) -> Unit
     ) {
         updateShowDialog(DialogTypes.NONE)
@@ -164,7 +168,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             sendChatInput(
                 activity,
                 snackbarHostState,
-                coroutineScope
+                coroutineScope,
+                sensorValues
             ) { onSuccess(_uiState.value.chatList[_uiState.value.chatList.size - 1].content) }
         } else _uiState.update {
             it.copy(

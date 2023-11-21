@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.theokanning.openai.completion.chat.ChatFunction
@@ -11,7 +12,7 @@ import java.lang.ref.WeakReference
 import java.time.LocalDate
 import java.time.LocalTime
 
-class Functions(context: Context) {
+class Functions(context: Context, sensorValues: SensorValues) {
     private val contextRef = WeakReference(context)
 
     private val appsListChatFunction = ChatFunction.builder()
@@ -34,6 +35,11 @@ class Functions(context: Context) {
         .description("Get the weather forecast for the user's current location.")
         .executor(WeatherByLatLonAPI::class.java) { it.getWeatherFromLocation(contextRef.get()) }
         .build()
+    private val accelerometerChatFunction = ChatFunction.builder()
+        .name("get_accelerometer")
+        .description("Get the current device's accelerometer x, y, and z values. The accelerometer takes into account acceleration due to gravity.")
+        .executor(RetrieveSensorsRequest::class.java) { it.getAccelerometer(sensorValues) }
+        .build()
 
     fun getFunctionList(allowSensors: Boolean = true): List<ChatFunction> {
         return if (allowSensors) listOf(
@@ -43,15 +49,20 @@ class Functions(context: Context) {
             weatherChatFunction,
             weatherByLocationChatFunction,
             dateAndTimeChatFunction,
+            accelerometerChatFunction
         )
         else listOf(cseChatFunction, weatherChatFunction, dateAndTimeChatFunction)
     }
 
-    val requiresPermission: Map<ChatFunction, Pair<String, String>> =
+    val requiresPermission: Map<ChatFunction, Pair<String?, String>> =
         mapOf(
             weatherByLocationChatFunction to Pair(
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 "location"
+            ),
+            accelerometerChatFunction to Pair(
+                null,
+                "accelerometer"
             )
         )
 
@@ -119,7 +130,18 @@ class Functions(context: Context) {
         val second: Int
     )
 
+    class RetrieveSensorsRequest : LateResponse() {
+        fun getAccelerometer(sensorValues: SensorValues) {
+            onSuccess(sensorValues.accelerometer)
+        }
+    }
+
     abstract class LateResponse {
+        @JsonIgnore
         var onSuccess: (result: Any) -> Unit = {}
     }
+}
+
+class SensorValues(var accelerometer: List<Float> = ArrayList(3)) {
+    constructor(original: SensorValues) : this(original.accelerometer)
 }

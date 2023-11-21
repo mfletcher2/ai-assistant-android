@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.ui
+package lol.max.assistantgpt.ui.dialog
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text

@@ -14,7 +14,7 @@ import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.defaultClient
 import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
 import com.theokanning.openai.service.OpenAiService.defaultRetrofit
-import lol.max.assistantgpt.ui.SensorRequest
+import lol.max.assistantgpt.ui.dialog.SensorRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import java.time.Duration
@@ -46,6 +46,7 @@ class ChatAPI(
         allowSensors: Boolean,
         permissionRequestLauncher: ActivityResultLauncher<String>,
         sensorRequest: SensorRequest,
+        sensorValues: SensorValues,
         showMessage: (String) -> Unit,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
@@ -57,7 +58,7 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val functionsObj = Functions(context)
+        val functionsObj = Functions(context, sensorValues)
         val functionExecutor = FunctionExecutor(functionsObj.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
@@ -108,6 +109,7 @@ class ChatAPI(
                             allowSensors = allowSensors,
                             permissionRequestLauncher = permissionRequestLauncher,
                             sensorRequest = sensorRequest,
+                            sensorValues = sensorValues,
                             showMessage = showMessage,
                             updateChatMessageList = updateChatMessageList
                         )
