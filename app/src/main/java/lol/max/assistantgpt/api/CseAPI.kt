@@ -1,6 +1,7 @@
 package lol.max.assistantgpt.api
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.theokanning.openai.completion.chat.ChatFunction
@@ -25,11 +26,19 @@ class CseAPI {
     @JsonPropertyDescription("The query to search")
     @JsonProperty(required = true)
     lateinit var query: String
+
+    @JsonIgnore
     private val key: String = BuildConfig.GOOGLE_API_KEY
+
+    @JsonIgnore
     private val pseId: String = BuildConfig.GOOGLE_SEARCH_ID
+
+    @JsonIgnore
     private val retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl("https://customsearch.googleapis.com/").build()
+
+    @JsonIgnore
     private val googleCseService = retrofit.create(GoogleCseService::class.java)
 
     fun doSearch(query: String): List<Result> {

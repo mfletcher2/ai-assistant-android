@@ -3,6 +3,7 @@ package lol.max.assistantgpt.api
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
@@ -26,9 +27,13 @@ class WeatherAPI {
     @JsonPropertyDescription("The location to get the weather for. It must at least specify the city and state. Example: New York, NY")
     @JsonProperty(required = true)
     lateinit var address: String
+
+    @JsonIgnore
     private val retrofitGoogle = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl("https://maps.googleapis.com/maps/api/").build()
+
+    @JsonIgnore
     private val googleGeocodeService = retrofitGoogle.create(GoogleGeocodeService::class.java)
 
     fun getWeather(address: String): List<Period> {
@@ -55,9 +60,12 @@ class WeatherAPI {
 class WeatherByLatLonAPI : Functions.LateResponse() {
     @SuppressLint("MissingPermission")
 
+    @JsonIgnore
     private val retrofitNWS = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl("https://api.weather.gov/").build()
+
+    @JsonIgnore
     private val nwsApiService = retrofitNWS.create(NWSAPIService::class.java)
 
     @SuppressLint("MissingPermission")
