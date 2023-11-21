@@ -14,6 +14,7 @@ import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.defaultClient
 import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
 import com.theokanning.openai.service.OpenAiService.defaultRetrofit
+import lol.max.assistantgpt.ui.SensorRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import java.time.Duration
@@ -43,7 +44,8 @@ class ChatAPI(
         model: GPTModel,
         context: ComponentActivity,
         allowSensors: Boolean,
-        requestPermissionLauncher: ActivityResultLauncher<String>,
+        permissionRequestLauncher: ActivityResultLauncher<String>,
+        sensorRequest: SensorRequest,
         showMessage: (String) -> Unit,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
@@ -78,15 +80,20 @@ class ChatAPI(
 
             val functionCall = responseMessage.functionCall
             if (functionCall != null) {
-                showMessage("${functionCall.name}${functionCall.arguments.toPrettyString()}")
+                showMessage(
+                    "Executing ${functionCall.name}${
+                        functionCall.arguments.toPrettyString().replace('{', '(').replace('}', ')')
+                    }"
+                )
                 Log.i(
                     "AssistantGPT",
                     "GPT is running this function: ${functionCall.name}${functionCall.arguments}"
                 )
                 functionExecutor.executeAndConvertToMessage(
-                    responseMessage.functionCall,
-                    functionsObj,
-                    requestPermissionLauncher
+                    functionCall = responseMessage.functionCall,
+                    functions = functionsObj,
+                    permissionRequestLauncher = permissionRequestLauncher,
+                    sensorRequest = sensorRequest
                 ) {
                     thread {
                         Log.i(
@@ -95,13 +102,14 @@ class ChatAPI(
                         )
                         messagesListCopy.add(it)
                         getCompletion(
-                            messagesListCopy,
-                            model,
-                            context,
-                            allowSensors,
-                            requestPermissionLauncher,
-                            showMessage,
-                            updateChatMessageList
+                            chatMessages = messagesListCopy,
+                            model = model,
+                            context = context,
+                            allowSensors = allowSensors,
+                            permissionRequestLauncher = permissionRequestLauncher,
+                            sensorRequest = sensorRequest,
+                            showMessage = showMessage,
+                            updateChatMessageList = updateChatMessageList
                         )
                     }
                 }

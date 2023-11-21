@@ -31,6 +31,7 @@ import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.api.GPTModel
 import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.DialogTypes
+import lol.max.assistantgpt.ui.SensorRequest
 
 data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
@@ -75,6 +76,14 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         chatInput = str
     }
 
+    val sensorRequest = SensorRequest(
+        sensorName = "",
+        permission = "",
+        onGranted = { },
+        onDenied = { },
+        onClose = { updateShowDialog(DialogTypes.NONE) },
+        showDialog = { updateShowDialog(DialogTypes.SENSOR) })
+
     fun sendChatInput(
         activity: ComponentActivity,
         snackbarHostState: SnackbarHostState,
@@ -100,7 +109,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 model = options.model,
                 context = activity,
                 allowSensors = options.allowSensors,
-                requestPermissionLauncher = requestPermissionLauncher!!,
+                permissionRequestLauncher = requestPermissionLauncher!!,
+                sensorRequest = sensorRequest,
                 showMessage = {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)

@@ -12,7 +12,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 class Functions(context: Context) {
-    val contextRef = WeakReference(context)
+    private val contextRef = WeakReference(context)
 
     private val appsListChatFunction = ChatFunction.builder()
         .name("get_apps_list")
@@ -47,8 +47,13 @@ class Functions(context: Context) {
         else listOf(cseChatFunction, weatherChatFunction, dateAndTimeChatFunction)
     }
 
-    val requiresPermission: Map<ChatFunction, String> =
-        mapOf(weatherByLocationChatFunction to Manifest.permission.ACCESS_COARSE_LOCATION)
+    val requiresPermission: Map<ChatFunction, Pair<String, String>> =
+        mapOf(
+            weatherByLocationChatFunction to Pair(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                "location"
+            )
+        )
 
     class PackageListRequest {
         fun getPackages(context: Context?): List<PackageResult> {

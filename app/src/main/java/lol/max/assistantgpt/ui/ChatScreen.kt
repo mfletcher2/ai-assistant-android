@@ -208,6 +208,9 @@ fun ChatScreen(
             )
         }
 
+        DialogTypes.SENSOR ->
+            SensorRequestDialog(sensorRequest = viewModel.sensorRequest)
+
         else -> return
     }
 
