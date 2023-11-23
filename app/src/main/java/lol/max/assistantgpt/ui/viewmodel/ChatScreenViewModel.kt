@@ -127,12 +127,17 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 }, updateChatMessageList = { list ->
                     _uiState.update {
                         it.copy(
-                            enableButtons = true,
-                            enableWaitingIndicator = false,
                             chatList = list,
                             newMessageAnimated = mutableStateOf(false)
                         )
                     }
+                    if (list.isEmpty() || list.last().role == ChatMessageRole.ASSISTANT.value())
+                        _uiState.update {
+                            it.copy(
+                                enableButtons = true,
+                                enableWaitingIndicator = false
+                            )
+                        }
                     if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
                         onSuccess(list.last())
                 })
@@ -176,7 +181,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 snackbarHostState,
                 coroutineScope,
                 sensorValues
-            ) { onSuccess(_uiState.value.chatList[_uiState.value.chatList.size - 1].content) }
+            ) { onSuccess(_uiState.value.chatList.last().content) }
         } else _uiState.update {
             it.copy(
                 enableButtons = true

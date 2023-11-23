@@ -156,8 +156,10 @@ fun ChatScreen(
                         )
                         return@ChatInput
                     }
-                    if (stt != null)
+                    if (stt != null) {
+                        tts?.stop()
                         viewModel.startChatVoiceInput(stt)
+                    }
                 }
             )
         }
@@ -399,18 +401,15 @@ fun ChatInput(
                 imeAction = ImeAction.Send
             ),
             keyboardActions = KeyboardActions { onClickSend() },
-            readOnly = !enableButton,
+            trailingIcon = {
+                IconButton(
+                    onClick = onClickSend,
+                    enabled = enableButton,
+                ) {
+                    Icon(imageVector = Icons.Rounded.Send, contentDescription = "Send")
+                }
+            }
         )
-        FilledIconButton(
-            onClick = onClickSend,
-            modifier = Modifier
-                .padding(8.dp)
-                .size(50.dp),
-            enabled = enableButton,
-            shape = RoundedCornerShape(25)
-        ) {
-            Icon(imageVector = Icons.Rounded.Send, contentDescription = "Send")
-        }
         FilledIconButton(
             onClick = { onClickVoice() },
             modifier = Modifier
