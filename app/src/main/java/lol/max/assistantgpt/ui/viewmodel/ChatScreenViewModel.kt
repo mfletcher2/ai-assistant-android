@@ -69,7 +69,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         confirmSensors = sharedPreferences.getBoolean(
             "confirmSensors",
             Options.Default.confirmSensors
-        )
+        ),
+        showFunctions = sharedPreferences.getBoolean("showFunctions", Options.Default.showFunctions)
     )
 
     private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
@@ -94,7 +95,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         snackbarHostState: SnackbarHostState,
         coroutineScope: CoroutineScope,
         sensorValues: SensorValues,
-        onSuccess: (String) -> Unit
+        onSuccess: (ChatMessage) -> Unit
     ) {
         if (chatInput == "") return
         val newChatList = _uiState.value.chatList
@@ -118,6 +119,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 permissionRequestLauncher = requestPermissionLauncher!!,
                 sensorRequest = sensorRequest,
                 sensorValues = sensorValues,
+                showFunctions = options.showFunctions,
                 showMessage = {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
@@ -131,8 +133,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                             newMessageAnimated = mutableStateOf(false)
                         )
                     }
-                    if (list.isNotEmpty() && list.last().content != null)
-                        onSuccess(list.last().content)
+                    if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
+                        onSuccess(list.last())
                 })
         }
     }
@@ -206,6 +208,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putString("googleSearchId", options.googleSearchId)
         e.putBoolean("allowSensors", options.allowSensors)
         e.putBoolean("confirmSensors", options.confirmSensors)
+        e.putBoolean("showFunctions", options.showFunctions)
         e.apply()
     }
 
@@ -221,7 +224,8 @@ class Options(
     var googleKey: String,
     var googleSearchId: String,
     var allowSensors: Boolean,
-    var confirmSensors: Boolean
+    var confirmSensors: Boolean,
+    var showFunctions: Boolean
 ) {
 
     companion object {
@@ -232,7 +236,8 @@ class Options(
             googleKey = "",
             googleSearchId = "",
             allowSensors = false,
-            confirmSensors = true
+            confirmSensors = true,
+            showFunctions = false
         )
     }
 }

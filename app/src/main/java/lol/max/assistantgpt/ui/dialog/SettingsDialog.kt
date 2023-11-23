@@ -28,11 +28,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import lol.max.assistantgpt.R
@@ -47,6 +45,7 @@ enum class DialogTypes {
 @Composable
 fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest: () -> Unit = {}) {
     var selectedModel by rememberSaveable { mutableStateOf(options.model.name) }
+    var showFunctions by rememberSaveable { mutableStateOf(options.showFunctions) }
     var timeoutSec by rememberSaveable { mutableStateOf(options.timeoutSec.toString()) }
     var allowSensors by rememberSaveable { mutableStateOf(options.allowSensors) }
     var confirmSensors by rememberSaveable { mutableStateOf(options.confirmSensors) }
@@ -64,6 +63,7 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     }
                     options.allowSensors = allowSensors
                     options.confirmSensors = confirmSensors
+                    options.showFunctions = showFunctions
                     onSaveRequest()
                     onDismissRequest()
                 },
@@ -80,25 +80,20 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                             selected = availableModels[i].name == selectedModel,
                             enabled = true,
                             role = Role.RadioButton,
+                            text = availableModels[i].name,
                             onClick = { selectedModel = availableModels[i].name })
-                        {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = (availableModels[i].name == selectedModel),
-                                    onClick = null // null recommended for accessibility with screenreaders
-                                )
-                                Text(
-                                    text = availableModels[i].name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(8.dp, 0.dp)
-                                )
-                            }
-                        }
-
                     }
                 }
                 item {
                     Text(text = stringResource(R.string.api))
+                }
+                item {
+                    OptionsItem(
+                        selected = showFunctions,
+                        enabled = true,
+                        role = Role.Switch,
+                        text = stringResource(R.string.show_functions),
+                        onClick = { showFunctions = !showFunctions })
                 }
                 item {
                     TextField(
@@ -118,50 +113,16 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                         selected = allowSensors,
                         enabled = true,
                         role = Role.Switch,
-                        onClick = { allowSensors = !allowSensors }) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.allow_sensors),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Start,
-                            )
-                            Switch(
-                                checked = allowSensors,
-                                onCheckedChange = null,
-                            )
-                        }
-
-                    }
+                        text = stringResource(id = R.string.allow_sensors),
+                        onClick = { allowSensors = !allowSensors })
                 }
                 item {
                     OptionsItem(
                         selected = confirmSensors,
                         enabled = allowSensors,
                         role = Role.Switch,
-                        onClick = { confirmSensors = !confirmSensors }) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            Arrangement.SpaceBetween,
-                            Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Confirm sensors",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (allowSensors) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.5f
-                                ),
-                            )
-                            Switch(
-                                checked = confirmSensors,
-                                onCheckedChange = null,
-                                enabled = allowSensors
-                            )
-                        }
-                    }
+                        text = "Confirm sensors",
+                        onClick = { confirmSensors = !confirmSensors })
                 }
             }
 
@@ -172,9 +133,9 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
 fun OptionsItem(
     selected: Boolean,
     enabled: Boolean,
-    role: Role?,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit
+    role: Role,
+    text: String,
+    onClick: () -> Unit
 ) {
     Row(
         Modifier
@@ -186,9 +147,25 @@ fun OptionsItem(
                 onClick = onClick,
                 role = role
             )
+            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        if (role == Role.Switch) Arrangement.SpaceBetween else Arrangement.Start,
+        Alignment.CenterVertically
     ) {
-        content()
+        if (role == Role.Switch) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(8.dp, 0.dp)
+            )
+            Switch(selected, null, enabled = enabled)
+        } else if (role == Role.RadioButton) {
+            RadioButton(selected = selected, onClick = null, enabled = enabled)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(8.dp, 0.dp)
+            )
+        }
     }
 }

@@ -16,4 +16,5 @@
     <string name="allow">許可</string>
     <string name="deny">不許可</string>
     <string name="sensor_values_title">センサー値</string>
+    <string name="show_functions">ファンクションを見せる</string>
 </resources>

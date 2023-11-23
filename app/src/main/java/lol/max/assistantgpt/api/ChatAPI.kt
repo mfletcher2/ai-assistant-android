@@ -48,6 +48,7 @@ class ChatAPI(
         sensorRequest: SensorRequest,
         sensorValues: SensorValues,
         showMessage: (String) -> Unit,
+        showFunctions: Boolean,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
         val messagesListCopy = ArrayList(chatMessages)
@@ -102,6 +103,8 @@ class ChatAPI(
                             "Function response: ${it.content}"
                         )
                         messagesListCopy.add(it)
+                        if (showFunctions)
+                            updateChatMessageList(messagesListCopy)
                         getCompletion(
                             chatMessages = messagesListCopy,
                             model = model,
@@ -111,6 +114,7 @@ class ChatAPI(
                             sensorRequest = sensorRequest,
                             sensorValues = sensorValues,
                             showMessage = showMessage,
+                            showFunctions = showFunctions,
                             updateChatMessageList = updateChatMessageList
                         )
                     }

@@ -139,7 +139,8 @@ fun ChatScreen(
                         coroutineScope,
                         sensorValues.value
                     ) {
-                        speakText(it)
+                        if (it.role == ChatMessageRole.ASSISTANT.value())
+                            speakText(it.content)
                     }
                 },
                 onClickVoice = {
@@ -204,7 +205,8 @@ fun ChatScreen(
         ) {
             ChatMessageConversation(
                 chatMessages = uiState.chatList,
-                newMessageAnimated = uiState.newMessageAnimated
+                newMessageAnimated = uiState.newMessageAnimated,
+                showFunctions = viewModel.options.showFunctions
             )
             if (uiState.enableWaitingIndicator)
                 LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -226,6 +228,7 @@ fun ChatScreen(
                 tint = MaterialTheme.colorScheme.primary
             )
         }
+
         DialogTypes.SENSOR ->
             SensorRequestDialog(
                 sensorRequest = viewModel.sensorRequest,
@@ -242,6 +245,7 @@ fun ChatScreen(
 
 @Composable
 fun MessageCard(msg: ChatMessage) {
+    if (msg.content == null) return
     val msgCorner = 12.dp
     Row(
         modifier = Modifier.padding(8.dp),
@@ -257,28 +261,50 @@ fun MessageCard(msg: ChatMessage) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column(
-            horizontalAlignment = if (msg.role == ChatMessageRole.ASSISTANT.value()) Alignment.Start else Alignment.End,
+            horizontalAlignment = when (msg.role) {
+                ChatMessageRole.ASSISTANT.value() -> Alignment.Start
+                ChatMessageRole.USER.value() -> Alignment.End
+                else -> Alignment.CenterHorizontally
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = msg.role[0].uppercaseChar() + msg.role.substring(1),
+                text = if (msg.role != ChatMessageRole.FUNCTION.value()) msg.role[0].uppercaseChar() + msg.role.substring(
+                    1
+                )
+                else msg.name,
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelMedium
             )
             Spacer(modifier = Modifier.height(4.dp))
             Surface(
-                shape = if (msg.role == ChatMessageRole.ASSISTANT.value()) RoundedCornerShape(
-                    msgCorner,
-                    msgCorner,
-                    msgCorner,
-                    0.dp
-                )
-                else RoundedCornerShape(msgCorner, msgCorner, 0.dp, msgCorner),
-                color = if (msg.role == ChatMessageRole.ASSISTANT.value()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer,
+                shape = when (msg.role) {
+                    ChatMessageRole.ASSISTANT.value() -> RoundedCornerShape(
+                        msgCorner,
+                        msgCorner,
+                        msgCorner,
+                        0.dp
+                    )
+
+                    ChatMessageRole.USER.value() -> RoundedCornerShape(
+                        msgCorner,
+                        msgCorner,
+                        0.dp,
+                        msgCorner
+                    )
+
+                    else -> RoundedCornerShape(msgCorner)
+                },
+                color = when (msg.role) {
+                    ChatMessageRole.ASSISTANT.value() -> MaterialTheme.colorScheme.primaryContainer
+                    ChatMessageRole.USER.value() -> MaterialTheme.colorScheme.secondaryContainer
+                    else -> MaterialTheme.colorScheme.tertiaryContainer
+                }
             ) {
                 SelectionContainer {
                     Text(
-                        text = msg.content,
+                        text = msg.content
+                            ?: (msg.functionCall.name + msg.functionCall.arguments.toPrettyString()),
                         modifier = Modifier.padding(8.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -291,7 +317,8 @@ fun MessageCard(msg: ChatMessage) {
 @Composable
 fun Conversation(
     messages: List<ChatMessage>,
-    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
+    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true),
+    showFunctions: Boolean
 ) {
     val listState = rememberLazyListState()
     if (messages.isNotEmpty())
@@ -308,7 +335,10 @@ fun Conversation(
                 }
             }
 
-            if (message.content != null && (message.role == ChatMessageRole.ASSISTANT.value() || message.role == ChatMessageRole.USER.value())) {
+            if (message.content != null &&
+                (message.role == ChatMessageRole.ASSISTANT.value() || message.role == ChatMessageRole.USER.value()
+                        || (message.role == ChatMessageRole.FUNCTION.value() && showFunctions))
+            ) {
                 AnimatedVisibility(
                     visibleState = state,
                     enter = fadeIn() + slideInVertically { it }) {
@@ -324,11 +354,13 @@ fun Conversation(
 @Composable
 fun ChatMessageConversation(
     chatMessages: List<ChatMessage>,
-    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
+    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true),
+    showFunctions: Boolean
 ) {
     Conversation(
         messages = chatMessages,
-        newMessageAnimated = newMessageAnimated
+        newMessageAnimated = newMessageAnimated,
+        showFunctions = showFunctions
     )
 }
 

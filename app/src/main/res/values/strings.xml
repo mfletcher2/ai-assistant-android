@@ -16,4 +16,5 @@
     <string name="allow">Allow</string>
     <string name="deny">Deny</string>
     <string name="sensor_values_title">Sensor Values</string>
+    <string name="show_functions">Show functions</string>
 </resources>
