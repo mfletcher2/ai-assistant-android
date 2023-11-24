@@ -37,10 +37,6 @@ import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.viewmodel.Options
 
-enum class DialogTypes {
-    NONE, SETTINGS, INFO, VOICE, SENSOR, SENSOR_INFO;
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest: () -> Unit = {}) {

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.SnackbarDuration
@@ -15,7 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.CoroutineScope
@@ -31,8 +35,9 @@ import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.api.GPTModel
 import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.api.availableModels
-import lol.max.assistantgpt.ui.dialog.DialogTypes
 import lol.max.assistantgpt.ui.dialog.SensorRequest
+import java.lang.reflect.Type
+import java.util.UUID
 
 data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
@@ -72,6 +77,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         ),
         showFunctions = sharedPreferences.getBoolean("showFunctions", Options.Default.showFunctions)
     )
+
+    private val chatListType: Type = object : TypeToken<ArrayList<Chat>>() {}.type
+    val savedChats: ArrayList<Chat> =
+        Gson().fromJson(sharedPreferences.getString("savedChats", "[]")!!, chatListType)
+    var currentChatIdx by mutableStateOf(-1)
 
     private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
 
@@ -138,6 +148,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                                 enableWaitingIndicator = false
                             )
                         }
+                    if (currentChatIdx != -1)
+                        saveChat()
                     if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
                         onSuccess(list.last())
                 })
@@ -189,14 +201,6 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun setMessagesList(list: ArrayList<ChatMessage>) {
-        _uiState.update {
-            it.copy(
-                chatList = list
-            )
-        }
-    }
-
     var showDialog: DialogTypes by mutableStateOf(DialogTypes.NONE)
         private set
 
@@ -220,9 +224,76 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     fun updateTimeoutSec() {
         chatApi.setTimeoutSec(options.timeoutSec)
     }
+
+    fun saveChat(name: String = "") {
+        val gson = Gson()
+        if (currentChatIdx == -1) {
+            val newChat = Chat(name, UUID.randomUUID().toString())
+            savedChats.add(newChat)
+            currentChatIdx = savedChats.size - 1
+            sharedPreferences.edit().putString("savedChats", gson.toJson(savedChats)).apply()
+        }
+        getApplication<Application>().openFileOutput(
+            savedChats[currentChatIdx].uuid,
+            Context.MODE_PRIVATE
+        ).use {
+            ObjectMapper().writeValue(it, _uiState.value.chatList)
+        }
+    }
+
+    fun loadChat(index: Int) {
+        getApplication<Application>().openFileInput(savedChats[index].uuid).bufferedReader()
+            .use { reader ->
+                val type = object : TypeReference<ArrayList<ChatMessage>>() {}
+                val messages = ObjectMapper().readValue(reader, type)
+
+                currentChatIdx = index
+                _uiState.update {
+                    it.copy(
+                        chatList = messages,
+                        enableButtons = true,
+                        enableWaitingIndicator = false,
+                        newMessageAnimated = mutableStateOf(false)
+                    )
+                }
+            }
+
+    }
+
+    fun deleteChat() {
+        if (currentChatIdx != -1) {
+            getApplication<Application>().deleteFile(savedChats[currentChatIdx].uuid)
+            savedChats.removeAt(currentChatIdx)
+            sharedPreferences.edit().putString("savedChats", Gson().toJson(savedChats)).apply()
+            currentChatIdx = -1
+        }
+        resetChat()
+    }
+
+    fun resetChat() {
+        if (_uiState.value.enableButtons) {
+            _uiState.update {
+                it.copy(
+                    chatList = arrayListOf(),
+                    newMessageAnimated = mutableStateOf(false)
+                )
+            }
+            currentChatIdx = -1
+        } else
+            Toast.makeText(
+                getApplication(),
+                "Please wait for the current request to finish.",
+                Toast.LENGTH_SHORT
+            ).show()
+    }
 }
 
-class Options(
+data class Chat(
+    val name: String,
+    val uuid: String,
+)
+
+data class Options(
     var model: GPTModel,
     var timeoutSec: Int,
     var openAiKey: String,
@@ -247,3 +318,6 @@ class Options(
     }
 }
 
+enum class DialogTypes {
+    NONE, SETTINGS, INFO, VOICE, SENSOR, SENSOR_INFO, SAVE;
+}

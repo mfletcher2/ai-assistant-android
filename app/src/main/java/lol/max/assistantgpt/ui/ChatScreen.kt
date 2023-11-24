@@ -30,25 +30,34 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -69,21 +78,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.RecognitionListener
 import lol.max.assistantgpt.api.SensorFunctions
-import lol.max.assistantgpt.ui.dialog.DialogTypes
 import lol.max.assistantgpt.ui.dialog.InfoDialog
+import lol.max.assistantgpt.ui.dialog.SaveDialog
 import lol.max.assistantgpt.ui.dialog.SensorInfoDialog
 import lol.max.assistantgpt.ui.dialog.SensorRequestDialog
 import lol.max.assistantgpt.ui.dialog.SettingsDialog
+import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
+import lol.max.assistantgpt.ui.viewmodel.DialogTypes
 import java.util.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,6 +119,7 @@ fun ChatScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     val micReq = stringResource(id = R.string.microphone_access_required)
 
@@ -126,92 +141,86 @@ fun ChatScreen(
             })
     )
 
-    Scaffold(bottomBar = {
-        BottomAppBar(modifier = Modifier.height(100.dp)) {
-            ChatInput(
-                inputText = viewModel.chatInput,
-                onInputTextChanged = { viewModel.updateChatInput(it) },
-                enableButton = uiState.enableButtons,
-                onClickSend = {
-                    viewModel.sendChatInput(
-                        activity,
-                        snackBarHostState,
-                        coroutineScope,
-                        sensorFunctions
-                    ) {
-                        if (it.role == ChatMessageRole.ASSISTANT.value())
-                            speakText(it.content)
-                    }
-                },
-                onClickVoice = {
-                    if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
-                        Toast.makeText(
-                            activity,
-                            micReq,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        activity.requestPermissions(
-                            arrayOf(Manifest.permission.RECORD_AUDIO),
-                            random.nextInt(Int.MAX_VALUE)
+    ChatNavigationDrawer(
+        drawerState,
+        viewModel.savedChats,
+        { viewModel.loadChat(it); coroutineScope.launch { drawerState.close() } },
+        { viewModel.resetChat(); coroutineScope.launch { drawerState.close() } }) {
+        Scaffold(
+            bottomBar = {
+                BottomAppBar(modifier = Modifier.height(100.dp)) {
+                    ChatInput(
+                        inputText = viewModel.chatInput,
+                        onInputTextChanged = { viewModel.updateChatInput(it) },
+                        enableButton = uiState.enableButtons,
+                        onClickSend = {
+                            viewModel.sendChatInput(
+                                activity,
+                                snackBarHostState,
+                                coroutineScope,
+                                sensorFunctions
+                            ) {
+                                if (it.role == ChatMessageRole.ASSISTANT.value())
+                                    speakText(it.content)
+                            }
+                        },
+                        onClickVoice = {
+                            if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
+                                Toast.makeText(
+                                    activity,
+                                    micReq,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                activity.requestPermissions(
+                                    arrayOf(Manifest.permission.RECORD_AUDIO),
+                                    random.nextInt(Int.MAX_VALUE)
+                                )
+                                return@ChatInput
+                            }
+                            if (stt != null) {
+                                tts?.stop()
+                                viewModel.startChatVoiceInput(stt)
+                            }
+                        }
+                    )
+                }
+            },
+            topBar = {
+                ChatTopAppBar(
+                    title = if (viewModel.currentChatIdx == -1) stringResource(R.string.app_name_localized) else viewModel.savedChats[viewModel.currentChatIdx].name,
+                    drawerState = drawerState,
+                    coroutineScope = coroutineScope,
+                    newChat = viewModel.currentChatIdx == -1,
+                    onSave = {
+                        if (viewModel.currentChatIdx == -1) viewModel.updateShowDialog(
+                            DialogTypes.SAVE
                         )
-                        return@ChatInput
-                    }
-                    if (stt != null) {
-                        tts?.stop()
-                        viewModel.startChatVoiceInput(stt)
-                    }
-                }
-            )
-        }
-    }, topBar = {
-        TopAppBar(
-            title = { Text(text = stringResource(R.string.app_name_localized)) },
-            colors = TopAppBarDefaults.smallTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary
-            ), actions = {
-                if (BuildConfig.DEBUG)
-                    IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.SENSOR_INFO) }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_sensors_24),
-                            contentDescription = "Sensors",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                    },
+                    onDelete = { viewModel.deleteChat() },
+                    enableButton = uiState.enableButtons,
+                    updateDialog = { viewModel.updateShowDialog(it) })
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackBarHostState)
+            }) {
+            Box(
+                modifier = Modifier
+                    .padding(
+                        PaddingValues(
+                            bottom = it.calculateBottomPadding(),
+                            top = it.calculateTopPadding()
                         )
-                    }
-                IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.INFO) }) {
-                    Icon(
-                        imageVector = Icons.Filled.Info, contentDescription = "Info",
-                        tint = MaterialTheme.colorScheme.onPrimary
                     )
-                }
-                IconButton(onClick = { viewModel.updateShowDialog(DialogTypes.SETTINGS) }) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            })
-    }, snackbarHost = {
-        SnackbarHost(hostState = snackBarHostState)
-    }) {
-        Box(
-            modifier = Modifier
-                .padding(
-                    PaddingValues(
-                        bottom = it.calculateBottomPadding(),
-                        top = it.calculateTopPadding()
-                    )
+                    .fillMaxSize(), contentAlignment = Alignment.BottomCenter
+            ) {
+                ChatMessageConversation(
+                    chatMessages = uiState.chatList,
+                    newMessageAnimated = uiState.newMessageAnimated,
+                    showFunctions = viewModel.options.showFunctions
                 )
-                .fillMaxSize(), contentAlignment = Alignment.BottomCenter
-        ) {
-            ChatMessageConversation(
-                chatMessages = uiState.chatList,
-                newMessageAnimated = uiState.newMessageAnimated,
-                showFunctions = viewModel.options.showFunctions
-            )
-            if (uiState.enableWaitingIndicator)
-                LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (uiState.enableWaitingIndicator)
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
         }
     }
     when (viewModel.showDialog) {
@@ -243,6 +252,11 @@ fun ChatScreen(
                     DialogTypes.NONE
                 )
             }
+
+        DialogTypes.SAVE ->
+            SaveDialog(
+                onDismissRequest = { viewModel.updateShowDialog(DialogTypes.NONE) },
+                onConfirm = { viewModel.saveChat(it) })
 
         else -> return
     }
@@ -427,5 +441,136 @@ fun ChatInput(
                 contentDescription = "Send"
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatTopAppBar(
+    title: String,
+    drawerState: DrawerState,
+    coroutineScope: CoroutineScope,
+    newChat: Boolean,
+    enableButton: Boolean,
+    onSave: () -> Unit,
+    onDelete: () -> Unit,
+    updateDialog: (DialogTypes) -> Unit
+) {
+    TopAppBar(
+        title = { Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        colors = TopAppBarDefaults.smallTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary
+        ), actions = {
+            if (BuildConfig.DEBUG)
+                IconButton(onClick = { updateDialog(DialogTypes.SENSOR_INFO) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_sensors_24),
+                        contentDescription = "Sensors",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            if (newChat) IconButton(onClick = onSave, enabled = enableButton) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_save_as_24),
+                    contentDescription = "Save",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            else IconButton(onClick = onDelete, enabled = enableButton) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+
+            IconButton(onClick = { updateDialog(DialogTypes.INFO) }) {
+                Icon(
+                    imageVector = Icons.Filled.Info, contentDescription = "Info",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            IconButton(onClick = { updateDialog(DialogTypes.SETTINGS) }) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = {
+                coroutineScope.launch {
+                    drawerState.apply { if (isClosed) drawerState.open() }
+                }
+            }) {
+                Icon(
+                    Icons.Filled.Menu,
+                    contentDescription = "Menu",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatNavigationDrawer(
+    drawerState: DrawerState,
+    chatList: List<Chat>, // name to uuid
+    onClickChat: (Int) -> Unit,
+    onClickNew: () -> Unit,
+    drawerContent: @Composable () -> Unit
+) {
+    ModalNavigationDrawer(drawerContent = {
+        ModalDrawerSheet {
+            Text(
+                text = "Saved chats",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.titleLarge
+            )
+            LazyColumn(content = {
+                itemsIndexed(chatList) { idx, chat ->
+                    TextButton(
+                        { onClickChat(idx) },
+                        shape = RoundedCornerShape(bottomEndPercent = 50, topEndPercent = 50)
+                    ) {
+                        Text(
+                            text = chat.name,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                item {
+                    TextButton(
+                        onClick = onClickNew,
+                        shape = RoundedCornerShape(bottomEndPercent = 50, topEndPercent = 50)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = "Add",
+                                Modifier.padding(8.dp)
+                            )
+                            Text(
+                                text = "New chat",
+                                Modifier
+                                    .padding(8.dp)
+                                    .fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            })
+        }
+    }, drawerState = drawerState, gesturesEnabled = true) {
+        drawerContent()
     }
 }

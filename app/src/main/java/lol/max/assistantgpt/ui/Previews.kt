@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import lol.max.assistantgpt.ui.dialog.InfoDialog
+import lol.max.assistantgpt.ui.dialog.SaveDialog
 import lol.max.assistantgpt.ui.dialog.SettingsDialog
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 import lol.max.assistantgpt.ui.viewmodel.Options
@@ -110,6 +111,15 @@ fun PreviewInfoDialog() {
         InfoDialog()
     }
 }
+
+@Preview
+@Composable
+fun PreviewSaveDialog() {
+    AssistantGPTTheme {
+        SaveDialog(onDismissRequest = {}, onConfirm = {})
+    }
+}
+
 //
 //
 //@Composable
