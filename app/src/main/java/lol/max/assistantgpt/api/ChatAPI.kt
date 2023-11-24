@@ -46,7 +46,7 @@ class ChatAPI(
         allowSensors: Boolean,
         permissionRequestLauncher: ActivityResultLauncher<String>,
         sensorRequest: SensorRequest,
-        sensorValues: SensorValues,
+        sensorFunctions: SensorFunctions,
         showMessage: (String) -> Unit,
         showFunctions: Boolean,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
@@ -59,7 +59,7 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val functionsObj = Functions(context, sensorValues)
+        val functionsObj = Functions(context, sensorFunctions)
         val functionExecutor = FunctionExecutor(functionsObj.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
@@ -103,8 +103,7 @@ class ChatAPI(
                             "Function response: ${it.content}"
                         )
                         messagesListCopy.add(it)
-                        if (showFunctions)
-                            updateChatMessageList(messagesListCopy)
+                        updateChatMessageList(messagesListCopy)
                         getCompletion(
                             chatMessages = messagesListCopy,
                             model = model,
@@ -112,7 +111,7 @@ class ChatAPI(
                             allowSensors = allowSensors,
                             permissionRequestLauncher = permissionRequestLauncher,
                             sensorRequest = sensorRequest,
-                            sensorValues = sensorValues,
+                            sensorFunctions = sensorFunctions,
                             showMessage = showMessage,
                             showFunctions = showFunctions,
                             updateChatMessageList = updateChatMessageList

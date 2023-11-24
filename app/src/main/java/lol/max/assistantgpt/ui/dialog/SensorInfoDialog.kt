@@ -1,29 +1,35 @@
 package lol.max.assistantgpt.ui.dialog
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import lol.max.assistantgpt.R
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import lol.max.assistantgpt.api.SensorValues
 
 @Composable
-fun SensorInfoDialog(sensorValues: MutableState<SensorValues>, onDismissRequest: () -> Unit) {
-    AlertDialog(onDismissRequest = onDismissRequest, confirmButton = {
-        TextButton(onClick = onDismissRequest) {
-            Text(text = stringResource(id = R.string.close))
+fun SensorInfoDialog(sensorValues: SensorValues, onDismissRequest: () -> Unit) {
+    val text = "Accelerometer:\n${sensorValues.accelerometer} m/s2\n\n" +
+            "Light: ${sensorValues.light} lux\n\n" +
+            "Magnetic field:\n${sensorValues.magneticField} μT\n\n" +
+            "Pressure: ${sensorValues.pressure} hPa\n\n" +
+            "Step counter: ${sensorValues.stepCounter} steps\n\n" +
+            "Sensor list:\n${sensorValues.sensorList}"
 
-        }
-    }, title = { Text(text = stringResource(R.string.sensor_values_title)) }, icon = {
-        Icon(
-            painter = painterResource(id = R.drawable.baseline_sensors_24),
-            contentDescription = "sensors"
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Text(
+            text = text,
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp), color = Color.White
         )
-    }, text = {
-        Text(text = "Accelerometer:\n${sensorValues.value.accelerometer}")
-    })
+    }
 }

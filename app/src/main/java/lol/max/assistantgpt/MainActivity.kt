@@ -1,10 +1,5 @@
 package lol.max.assistantgpt
 
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.SpeechRecognizer
@@ -16,17 +11,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import lol.max.assistantgpt.api.FunctionExecutor
-import lol.max.assistantgpt.api.SensorValues
+import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.ui.ChatScreen
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 
-class MainActivity : ComponentActivity(), SensorEventListener {
-    private lateinit var sensorManager: SensorManager
-    private var accelerometer: Sensor? = null
-    private var sensorValues = mutableStateOf(SensorValues())
+class MainActivity : ComponentActivity() {
+    private lateinit var sensorFunctions: SensorFunctions
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,9 +46,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     FunctionExecutor.onDenied = {}
                 }
             }
-
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorFunctions = SensorFunctions(this)
 
         // Update UI elements
         setContent {
@@ -65,7 +55,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen(tts, stt, requestPermissionLauncher, sensorValues)
+                    ChatScreen(tts, stt, requestPermissionLauncher, sensorFunctions)
                 }
             }
         }
@@ -73,20 +63,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorFunctions.registerListeners()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+        sensorFunctions.unregisterListeners()
     }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        when (event?.sensor?.type) {
-            Sensor.TYPE_ACCELEROMETER -> sensorValues.value.accelerometer = event.values.toList()
-        }
-        sensorValues.value = SensorValues(sensorValues.value)
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }

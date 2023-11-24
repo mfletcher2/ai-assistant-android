@@ -77,7 +77,7 @@ import com.theokanning.openai.completion.chat.ChatMessageRole
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.RecognitionListener
-import lol.max.assistantgpt.api.SensorValues
+import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.ui.dialog.DialogTypes
 import lol.max.assistantgpt.ui.dialog.InfoDialog
 import lol.max.assistantgpt.ui.dialog.SensorInfoDialog
@@ -92,7 +92,7 @@ fun ChatScreen(
     tts: TextToSpeech?,
     stt: SpeechRecognizer?,
     requestPermissionLauncher: ActivityResultLauncher<String>,
-    sensorValues: MutableState<SensorValues>,
+    sensorFunctions: SensorFunctions,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -121,7 +121,7 @@ fun ChatScreen(
                     it,
                     coroutineScope,
                     snackBarHostState,
-                    sensorValues.value
+                    sensorFunctions
                 ) { str -> speakText(str) }
             })
     )
@@ -137,7 +137,7 @@ fun ChatScreen(
                         activity,
                         snackBarHostState,
                         coroutineScope,
-                        sensorValues.value
+                        sensorFunctions
                     ) {
                         if (it.role == ChatMessageRole.ASSISTANT.value())
                             speakText(it.content)
@@ -238,7 +238,11 @@ fun ChatScreen(
             )
 
         DialogTypes.SENSOR_INFO ->
-            SensorInfoDialog(sensorValues = sensorValues) { viewModel.updateShowDialog(DialogTypes.NONE) }
+            SensorInfoDialog(sensorValues = sensorFunctions.sensorValues) {
+                viewModel.updateShowDialog(
+                    DialogTypes.NONE
+                )
+            }
 
         else -> return
     }

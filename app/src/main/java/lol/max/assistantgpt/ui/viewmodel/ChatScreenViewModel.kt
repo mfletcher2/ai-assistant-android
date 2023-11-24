@@ -29,7 +29,7 @@ import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.ChatAPI
 import lol.max.assistantgpt.api.GPTModel
-import lol.max.assistantgpt.api.SensorValues
+import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.dialog.DialogTypes
 import lol.max.assistantgpt.ui.dialog.SensorRequest
@@ -94,7 +94,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         activity: ComponentActivity,
         snackbarHostState: SnackbarHostState,
         coroutineScope: CoroutineScope,
-        sensorValues: SensorValues,
+        sensorFunctions: SensorFunctions,
         onSuccess: (ChatMessage) -> Unit
     ) {
         if (chatInput == "") return
@@ -118,7 +118,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 allowSensors = options.allowSensors,
                 permissionRequestLauncher = requestPermissionLauncher!!,
                 sensorRequest = sensorRequest,
-                sensorValues = sensorValues,
+                sensorFunctions = sensorFunctions,
                 showFunctions = options.showFunctions,
                 showMessage = {
                     coroutineScope.launch {
@@ -171,7 +171,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         activity: ComponentActivity,
         statusCode: Int, coroutineScope: CoroutineScope,
         snackbarHostState: SnackbarHostState,
-        sensorValues: SensorValues,
+        sensorFunctions: SensorFunctions,
         onSuccess: (String) -> Unit
     ) {
         updateShowDialog(DialogTypes.NONE)
@@ -180,7 +180,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 activity,
                 snackbarHostState,
                 coroutineScope,
-                sensorValues
+                sensorFunctions
             ) { onSuccess(_uiState.value.chatList.last().content) }
         } else _uiState.update {
             it.copy(

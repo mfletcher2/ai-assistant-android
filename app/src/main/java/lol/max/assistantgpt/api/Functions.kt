@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference
 import java.time.LocalDate
 import java.time.LocalTime
 
-class Functions(context: Context, sensorValues: SensorValues) {
+class Functions(context: Context, private val sensorFunctions: SensorFunctions) {
     private val contextRef = WeakReference(context)
 
     private val appsListChatFunction = ChatFunction.builder()
@@ -35,11 +35,6 @@ class Functions(context: Context, sensorValues: SensorValues) {
         .description("Get the weather forecast for the user's current location.")
         .executor(WeatherByLatLonAPI::class.java) { it.getWeatherFromLocation(contextRef.get()) }
         .build()
-    private val accelerometerChatFunction = ChatFunction.builder()
-        .name("get_accelerometer")
-        .description("Get the current device's accelerometer x, y, and z values. The accelerometer takes into account acceleration due to gravity.")
-        .executor(RetrieveSensorsRequest::class.java) { it.getAccelerometer(sensorValues) }
-        .build()
 
     fun getFunctionList(allowSensors: Boolean = true): List<ChatFunction> {
         return if (allowSensors) listOf(
@@ -49,7 +44,11 @@ class Functions(context: Context, sensorValues: SensorValues) {
             weatherChatFunction,
             weatherByLocationChatFunction,
             dateAndTimeChatFunction,
-            accelerometerChatFunction
+            sensorFunctions.accelerometerChatFunction,
+            sensorFunctions.lightChatFunction,
+            sensorFunctions.orientationChatFunction,
+            sensorFunctions.pressureChatFunction,
+            sensorFunctions.stepCounterChatFunction
         )
         else listOf(cseChatFunction, weatherChatFunction, dateAndTimeChatFunction)
     }
@@ -60,9 +59,13 @@ class Functions(context: Context, sensorValues: SensorValues) {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 "location"
             ),
-            accelerometerChatFunction to Pair(
-                null,
-                "accelerometer"
+            sensorFunctions.accelerometerChatFunction to Pair(null, "accelerometer"),
+            sensorFunctions.lightChatFunction to Pair(null, "light sensor"),
+            sensorFunctions.orientationChatFunction to Pair(null, "orientation"),
+            sensorFunctions.pressureChatFunction to Pair(null, "pressure sensor"),
+            sensorFunctions.stepCounterChatFunction to Pair(
+                Manifest.permission.ACTIVITY_RECOGNITION,
+                "step counter"
             )
         )
 
@@ -130,18 +133,10 @@ class Functions(context: Context, sensorValues: SensorValues) {
         val second: Int
     )
 
-    class RetrieveSensorsRequest : LateResponse() {
-        fun getAccelerometer(sensorValues: SensorValues) {
-            onSuccess(sensorValues.accelerometer)
-        }
-    }
-
-    abstract class LateResponse {
+    open class LateResponse {
         @JsonIgnore
         var onSuccess: (result: Any) -> Unit = {}
     }
 }
 
-class SensorValues(var accelerometer: List<Float> = ArrayList(3)) {
-    constructor(original: SensorValues) : this(original.accelerometer)
-}
+
