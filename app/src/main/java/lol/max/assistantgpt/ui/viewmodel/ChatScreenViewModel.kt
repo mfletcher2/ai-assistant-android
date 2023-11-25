@@ -16,6 +16,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -78,9 +79,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         showFunctions = sharedPreferences.getBoolean("showFunctions", Options.Default.showFunctions)
     )
 
-    private val chatListType: Type = object : TypeToken<ArrayList<Chat>>() {}.type
-    val savedChats: ArrayList<Chat> =
+    private val chatListType: Type = object : TypeToken<SnapshotStateList<Chat>>() {}.type
+    var savedChats: SnapshotStateList<Chat> =
         Gson().fromJson(sharedPreferences.getString("savedChats", "[]")!!, chatListType)
+        private set
+
     var currentChatIdx by mutableStateOf(-1)
     val showLoading = MutableTransitionState(false)
 
