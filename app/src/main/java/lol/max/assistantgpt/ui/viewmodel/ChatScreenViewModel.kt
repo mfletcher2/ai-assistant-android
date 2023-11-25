@@ -9,6 +9,7 @@ import android.speech.SpeechRecognizer
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.MutableState
@@ -42,7 +43,6 @@ import java.util.UUID
 data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
     val enableButtons: Boolean = true,
-    val enableWaitingIndicator: Boolean = false,
     val newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 )
 
@@ -82,6 +82,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     val savedChats: ArrayList<Chat> =
         Gson().fromJson(sharedPreferences.getString("savedChats", "[]")!!, chatListType)
     var currentChatIdx by mutableStateOf(-1)
+    val showLoading = MutableTransitionState(false)
 
     private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
 
@@ -113,11 +114,10 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update {
             it.copy(
                 enableButtons = false,
-                enableWaitingIndicator = true,
                 chatList = newChatList
             )
         }
-
+        showLoading.targetState = true
         chatInput = ""
 
         coroutineScope.launch(Dispatchers.IO) {
@@ -145,9 +145,9 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                         _uiState.update {
                             it.copy(
                                 enableButtons = true,
-                                enableWaitingIndicator = false
                             )
                         }
+                    showLoading.targetState = false
                     if (currentChatIdx != -1)
                         saveChat()
                     if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
@@ -252,10 +252,10 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                     it.copy(
                         chatList = messages,
                         enableButtons = true,
-                        enableWaitingIndicator = false,
                         newMessageAnimated = mutableStateOf(false)
                     )
                 }
+                showLoading.targetState = false
             }
 
     }
