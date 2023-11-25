@@ -7,8 +7,11 @@ import android.speech.tts.TextToSpeech
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,6 +19,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.with
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,6 +75,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -90,6 +95,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
@@ -104,7 +110,6 @@ import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
 import lol.max.assistantgpt.ui.viewmodel.DialogTypes
 import java.util.Random
-import kotlin.concurrent.thread
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,12 +152,17 @@ fun ChatScreen(
             })
     )
     val transitionState = remember { MutableTransitionState(false) }.apply { targetState = true }
+    var showChat by remember { mutableStateOf(true) }
 
     ChatNavigationDrawer(
-        drawerState,
-        viewModel.savedChats,
-        { coroutineScope.launch { viewModel.loadChat(it); drawerState.close(); } },
-        { viewModel.resetChat(); coroutineScope.launch { drawerState.close() } }) {
+        drawerState = drawerState,
+        chatList = viewModel.savedChats,
+        onClickChat = {
+            showChat = false; coroutineScope.launch(Dispatchers.IO) {
+            viewModel.loadChat(it); drawerState.close(); showChat = true
+        }
+        },
+        onClickNew = { viewModel.resetChat(); coroutineScope.launch { drawerState.close() } }) {
         Scaffold(
             bottomBar = {
                 AnimatedVisibility(
@@ -210,7 +220,13 @@ fun ChatScreen(
                                 DialogTypes.SAVE
                             )
                         },
-                        onDelete = { viewModel.deleteChat() },
+                        onDelete = {
+                            val temp = viewModel.savedChats[viewModel.currentChatIdx].name
+                            viewModel.deleteChat()
+                            coroutineScope.launch {
+                                snackBarHostState.showSnackbar("Deleted $temp")
+                            }
+                        },
                         enableButton = uiState.enableButtons,
                         updateDialog = { viewModel.updateShowDialog(it) })
                 }
@@ -218,26 +234,32 @@ fun ChatScreen(
             snackbarHost = {
                 SnackbarHost(hostState = snackBarHostState)
             }) {
-            Box(
-                modifier = Modifier
-                    .padding(
-                        PaddingValues(
-                            bottom = it.calculateBottomPadding(),
-                            top = it.calculateTopPadding()
-                        )
-                    )
-                    .fillMaxSize(), contentAlignment = Alignment.BottomCenter
+            AnimatedVisibility(
+                visible = showChat,
+                enter = fadeIn() + slideInVertically(),
+                exit = ExitTransition.None
             ) {
-                ChatMessageConversation(
-                    chatMessages = uiState.chatList,
-                    newMessageAnimated = uiState.newMessageAnimated,
-                    showFunctions = viewModel.options.showFunctions
-                )
-                AnimatedVisibility(
-                    visibleState = viewModel.showLoading,
-                    enter = slideInVertically { fullHeight -> fullHeight },
-                    exit = slideOutVertically { fullHeight -> fullHeight }) {
-                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                Box(
+                    modifier = Modifier
+                        .padding(
+                            PaddingValues(
+                                bottom = it.calculateBottomPadding(),
+                                top = it.calculateTopPadding()
+                            )
+                        )
+                        .fillMaxSize(), contentAlignment = Alignment.BottomCenter
+                ) {
+                    ChatMessageConversation(
+                        chatMessages = uiState.chatList,
+                        newMessageAnimated = uiState.newMessageAnimated,
+                        showFunctions = viewModel.options.showFunctions
+                    )
+                    AnimatedVisibility(
+                        visibleState = viewModel.showLoading,
+                        enter = slideInVertically { fullHeight -> fullHeight },
+                        exit = slideOutVertically { fullHeight -> fullHeight }) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
                 }
             }
         }
@@ -275,7 +297,12 @@ fun ChatScreen(
         DialogTypes.SAVE ->
             SaveDialog(
                 onDismissRequest = { viewModel.updateShowDialog(DialogTypes.NONE) },
-                onConfirm = { thread { viewModel.saveChat(it) } })
+                onConfirm = {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        viewModel.saveChat(it)
+                        snackBarHostState.showSnackbar("Saved ${viewModel.savedChats[viewModel.currentChatIdx].name}")
+                    }
+                })
 
         else -> return
     }
@@ -477,9 +504,16 @@ fun ChatTopAppBar(
 ) {
     TopAppBar(
         title = {
-
-            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
+            AnimatedContent(
+                targetState = title,
+                label = "title",
+                transitionSpec = {
+                    slideInVertically { height -> -height } + fadeIn() with slideOutVertically { height -> -height } + fadeOut() using SizeTransform(
+                        false
+                    )
+                }) { newTitle ->
+                Text(text = newTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         },
         colors = TopAppBarDefaults.smallTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primary,
