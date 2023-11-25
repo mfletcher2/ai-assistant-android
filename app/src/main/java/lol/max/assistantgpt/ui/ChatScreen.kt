@@ -146,6 +146,8 @@ fun ChatScreen(
                 ) { str -> speakText(str) }
             })
     )
+    val transitionState = remember { MutableTransitionState(false) }.apply { targetState = true }
+
     ChatNavigationDrawer(
         drawerState,
         viewModel.savedChats,
@@ -153,57 +155,65 @@ fun ChatScreen(
         { viewModel.resetChat(); coroutineScope.launch { drawerState.close() } }) {
         Scaffold(
             bottomBar = {
-                BottomAppBar(modifier = Modifier.height(100.dp)) {
-                    ChatInput(
-                        inputText = viewModel.chatInput,
-                        onInputTextChanged = { viewModel.updateChatInput(it) },
-                        enableButton = uiState.enableButtons,
-                        onClickSend = {
-                            viewModel.sendChatInput(
-                                activity,
-                                snackBarHostState,
-                                coroutineScope,
-                                sensorFunctions
-                            ) {
-                                if (it.role == ChatMessageRole.ASSISTANT.value())
-                                    speakText(it.content)
-                            }
-                        },
-                        onClickVoice = {
-                            if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
-                                Toast.makeText(
+                AnimatedVisibility(
+                    visibleState = transitionState,
+                    enter = slideInVertically { fullHeight -> fullHeight }) {
+                    BottomAppBar(modifier = Modifier.height(100.dp)) {
+                        ChatInput(
+                            inputText = viewModel.chatInput,
+                            onInputTextChanged = { viewModel.updateChatInput(it) },
+                            enableButton = uiState.enableButtons,
+                            onClickSend = {
+                                viewModel.sendChatInput(
                                     activity,
-                                    micReq,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                activity.requestPermissions(
-                                    arrayOf(Manifest.permission.RECORD_AUDIO),
-                                    random.nextInt(Int.MAX_VALUE)
-                                )
-                                return@ChatInput
+                                    snackBarHostState,
+                                    coroutineScope,
+                                    sensorFunctions
+                                ) {
+                                    if (it.role == ChatMessageRole.ASSISTANT.value())
+                                        speakText(it.content)
+                                }
+                            },
+                            onClickVoice = {
+                                if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
+                                    Toast.makeText(
+                                        activity,
+                                        micReq,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    activity.requestPermissions(
+                                        arrayOf(Manifest.permission.RECORD_AUDIO),
+                                        random.nextInt(Int.MAX_VALUE)
+                                    )
+                                    return@ChatInput
+                                }
+                                if (stt != null) {
+                                    tts?.stop()
+                                    viewModel.startChatVoiceInput(stt)
+                                }
                             }
-                            if (stt != null) {
-                                tts?.stop()
-                                viewModel.startChatVoiceInput(stt)
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             },
             topBar = {
-                ChatTopAppBar(
-                    title = if (viewModel.currentChatIdx == -1) stringResource(R.string.app_name_localized) else viewModel.savedChats[viewModel.currentChatIdx].name,
-                    drawerState = drawerState,
-                    coroutineScope = coroutineScope,
-                    newChat = viewModel.currentChatIdx == -1,
-                    onSave = {
-                        if (viewModel.currentChatIdx == -1) viewModel.updateShowDialog(
-                            DialogTypes.SAVE
-                        )
-                    },
-                    onDelete = { viewModel.deleteChat() },
-                    enableButton = uiState.enableButtons,
-                    updateDialog = { viewModel.updateShowDialog(it) })
+                AnimatedVisibility(
+                    visibleState = transitionState,
+                    enter = slideInVertically { fullHeight -> -fullHeight }) {
+                    ChatTopAppBar(
+                        title = if (viewModel.currentChatIdx == -1) stringResource(R.string.app_name_localized) else viewModel.savedChats[viewModel.currentChatIdx].name,
+                        drawerState = drawerState,
+                        coroutineScope = coroutineScope,
+                        newChat = viewModel.currentChatIdx == -1,
+                        onSave = {
+                            if (viewModel.currentChatIdx == -1) viewModel.updateShowDialog(
+                                DialogTypes.SAVE
+                            )
+                        },
+                        onDelete = { viewModel.deleteChat() },
+                        enableButton = uiState.enableButtons,
+                        updateDialog = { viewModel.updateShowDialog(it) })
+                }
             },
             snackbarHost = {
                 SnackbarHost(hostState = snackBarHostState)
