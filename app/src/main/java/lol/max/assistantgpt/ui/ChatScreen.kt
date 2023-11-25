@@ -8,8 +8,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -449,7 +453,7 @@ fun ChatInput(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun ChatTopAppBar(
     title: String,
@@ -462,7 +466,11 @@ fun ChatTopAppBar(
     updateDialog: (DialogTypes) -> Unit
 ) {
     TopAppBar(
-        title = { Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        title = {
+
+            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+        },
         colors = TopAppBarDefaults.smallTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primary,
             titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -475,21 +483,34 @@ fun ChatTopAppBar(
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-            if (newChat) IconButton(onClick = onSave, enabled = enableButton) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_save_as_24),
-                    contentDescription = "Save",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+            Box {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = newChat,
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut()
+                ) {
+                    IconButton(onClick = onSave, enabled = enableButton) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_save_as_24),
+                            contentDescription = "Save",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = !newChat,
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut()
+                ) {
+                    IconButton(onClick = onDelete, enabled = enableButton) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
             }
-            else IconButton(onClick = onDelete, enabled = enableButton) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-
             IconButton(onClick = { updateDialog(DialogTypes.INFO) }) {
                 Icon(
                     imageVector = Icons.Filled.Info, contentDescription = "Info",
