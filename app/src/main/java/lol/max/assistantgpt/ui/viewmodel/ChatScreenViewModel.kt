@@ -12,7 +12,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -44,7 +43,6 @@ import java.util.UUID
 data class ChatScreenUiState(
     val chatList: ArrayList<ChatMessage> = arrayListOf(),
     val enableButtons: Boolean = true,
-    val newMessageAnimated: MutableState<Boolean> = mutableStateOf(true)
 )
 
 class ChatScreenViewModel(application: Application) : AndroidViewModel(application) {
@@ -86,6 +84,12 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     var currentChatIdx by mutableStateOf(-1)
     val showLoading = MutableTransitionState(false)
+    private var newMessageAnimated by mutableStateOf(false)
+    fun getAndSetNewMessageAnimated(): Boolean {
+        val temp = newMessageAnimated
+        newMessageAnimated = true
+        return temp
+    }
 
     private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
 
@@ -114,6 +118,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         if (chatInput == "") return
         val newChatList = _uiState.value.chatList
         newChatList.add(ChatMessage(ChatMessageRole.USER.value(), chatInput.trim()))
+        newMessageAnimated = false
         _uiState.update {
             it.copy(
                 enableButtons = false,
@@ -138,13 +143,13 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                         snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
                     }
                 }, updateChatMessageList = { list ->
+                    newMessageAnimated = false
                     _uiState.update {
                         it.copy(
                             chatList = list,
-                            newMessageAnimated = mutableStateOf(false)
                         )
                     }
-                    if (list.isEmpty() || list.last().role == ChatMessageRole.ASSISTANT.value())
+                    if (list.isEmpty() || (list.last().role == ChatMessageRole.ASSISTANT.value() && list.last().functionCall == null))
                         _uiState.update {
                             it.copy(
                                 enableButtons = true,
@@ -255,9 +260,9 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                     it.copy(
                         chatList = messages,
                         enableButtons = true,
-                        newMessageAnimated = mutableStateOf(false)
                     )
                 }
+                newMessageAnimated = true
                 showLoading.targetState = false
             }
 
@@ -277,9 +282,9 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             _uiState.update {
                 it.copy(
                     chatList = arrayListOf(),
-                    newMessageAnimated = mutableStateOf(false)
                 )
             }
+            newMessageAnimated = false
             currentChatIdx = -1
         } else
             Toast.makeText(

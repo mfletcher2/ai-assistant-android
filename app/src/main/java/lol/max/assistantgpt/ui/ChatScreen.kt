@@ -13,6 +13,10 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring.DampingRatioLowBouncy
+import androidx.compose.animation.core.Spring.StiffnessLow
+import androidx.compose.animation.core.Spring.StiffnessMediumLow
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -69,7 +73,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -167,7 +170,7 @@ fun ChatScreen(
             bottomBar = {
                 AnimatedVisibility(
                     visibleState = transitionState,
-                    enter = slideInVertically { fullHeight -> fullHeight }) {
+                    enter = slideInVertically(spring(stiffness = StiffnessLow)) { fullHeight -> fullHeight }) {
                     BottomAppBar(modifier = Modifier.height(100.dp)) {
                         ChatInput(
                             inputText = viewModel.chatInput,
@@ -209,7 +212,7 @@ fun ChatScreen(
             topBar = {
                 AnimatedVisibility(
                     visibleState = transitionState,
-                    enter = slideInVertically { fullHeight -> -fullHeight }) {
+                    enter = slideInVertically(spring(stiffness = StiffnessLow)) { fullHeight -> -fullHeight }) {
                     ChatTopAppBar(
                         title = if (viewModel.currentChatIdx == -1) stringResource(R.string.app_name_localized) else viewModel.savedChats[viewModel.currentChatIdx].name,
                         drawerState = drawerState,
@@ -236,7 +239,12 @@ fun ChatScreen(
             }) {
             AnimatedVisibility(
                 visible = showChat,
-                enter = fadeIn() + slideInVertically(),
+                enter = fadeIn() + slideInVertically(
+                    spring(
+                        DampingRatioLowBouncy,
+                        StiffnessLow
+                    )
+                ),
                 exit = ExitTransition.None
             ) {
                 Box(
@@ -251,8 +259,8 @@ fun ChatScreen(
                 ) {
                     ChatMessageConversation(
                         chatMessages = uiState.chatList,
-                        newMessageAnimated = uiState.newMessageAnimated,
-                        showFunctions = viewModel.options.showFunctions
+                        showFunctions = viewModel.options.showFunctions,
+                        isAnimated = { viewModel.getAndSetNewMessageAnimated() }
                     )
                     AnimatedVisibility(
                         visibleState = viewModel.showLoading,
@@ -383,8 +391,8 @@ fun MessageCard(msg: ChatMessage) {
 @Composable
 fun Conversation(
     messages: List<ChatMessage>,
-    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true),
-    showFunctions: Boolean
+    showFunctions: Boolean,
+    isAnimated: () -> Boolean
 ) {
     val listState = rememberLazyListState()
     if (messages.isNotEmpty())
@@ -394,10 +402,9 @@ fun Conversation(
     LazyColumn(state = listState) {
         itemsIndexed(messages) { i, message ->
             val state = remember {
-                MutableTransitionState(i != messages.size - 1 || newMessageAnimated.value).apply {
+                MutableTransitionState(i != messages.size - 1 || isAnimated()).apply {
                     // Start the animation immediately.
                     targetState = true
-                    newMessageAnimated.value = true
                 }
             }
 
@@ -407,7 +414,7 @@ fun Conversation(
             ) {
                 AnimatedVisibility(
                     visibleState = state,
-                    enter = fadeIn() + slideInVertically { it }) {
+                    enter = fadeIn() + slideInVertically(spring(stiffness = StiffnessMediumLow)) { it }) {
                     MessageCard(msg = message)
                 }
             }
@@ -420,13 +427,13 @@ fun Conversation(
 @Composable
 fun ChatMessageConversation(
     chatMessages: List<ChatMessage>,
-    newMessageAnimated: MutableState<Boolean> = mutableStateOf(true),
-    showFunctions: Boolean
+    showFunctions: Boolean,
+    isAnimated: () -> Boolean
 ) {
     Conversation(
         messages = chatMessages,
-        newMessageAnimated = newMessageAnimated,
-        showFunctions = showFunctions
+        showFunctions = showFunctions,
+        isAnimated = isAnimated
     )
 }
 
