@@ -78,9 +78,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         showFunctions = sharedPreferences.getBoolean("showFunctions", Options.Default.showFunctions)
     )
 
-    private val chatListType: Type = object : TypeToken<ArrayList<Chat>>() {}.type
-    val savedChats: ArrayList<Chat> =
+    private val chatListType: Type = object : TypeToken<SnapshotStateList<Chat>>() {}.type
+    var savedChats: SnapshotStateList<Chat> =
         Gson().fromJson(sharedPreferences.getString("savedChats", "[]")!!, chatListType)
+        private set
+
     var currentChatIdx by mutableStateOf(-1)
     val showLoading = MutableTransitionState(false)
 
