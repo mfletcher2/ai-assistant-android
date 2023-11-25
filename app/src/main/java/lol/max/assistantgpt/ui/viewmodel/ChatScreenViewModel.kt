@@ -267,7 +267,6 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             sharedPreferences.edit().putString("savedChats", Gson().toJson(savedChats)).apply()
             currentChatIdx = -1
         }
-        resetChat()
     }
 
     fun resetChat() {
