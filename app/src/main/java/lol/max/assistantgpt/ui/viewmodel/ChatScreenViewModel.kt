@@ -210,6 +210,17 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun cancelVoiceChatInput(stt: SpeechRecognizer?) {
+        updateShowDialog(DialogTypes.NONE)
+        stt?.cancel()
+        _uiState.update {
+            it.copy(
+                enableButtons = true
+            )
+        }
+        chatInput = ""
+    }
+
     var showDialog: DialogTypes by mutableStateOf(DialogTypes.NONE)
         private set
 

@@ -23,7 +23,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.with
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -280,7 +280,7 @@ fun ChatScreen(
         }, { viewModel.updateTimeoutSec(); viewModel.saveSharedPreferences() })
 
         DialogTypes.INFO -> InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
-        DialogTypes.VOICE -> Dialog(onDismissRequest = {}) {
+        DialogTypes.VOICE -> Dialog(onDismissRequest = { viewModel.cancelVoiceChatInput(stt) }) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_mic_24),
                 contentDescription = "Microphone",
@@ -515,7 +515,7 @@ fun ChatTopAppBar(
                 targetState = title,
                 label = "title",
                 transitionSpec = {
-                    slideInVertically { height -> -height } + fadeIn() with slideOutVertically { height -> -height } + fadeOut() using SizeTransform(
+                    (slideInVertically { height -> -height } + fadeIn()).togetherWith(slideOutVertically { height -> -height } + fadeOut()) using SizeTransform(
                         false
                     )
                 }) { newTitle ->
