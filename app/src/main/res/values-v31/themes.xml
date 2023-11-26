@@ -2,6 +2,6 @@
 <resources>
 
     <style name="Theme.AssistantGPT" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowSplashScreenBackground">?android:windowBackground</item>
+        <item name="android:windowSplashScreenBackground">@color/navy</item>
     </style>
 </resources>

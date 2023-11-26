@@ -17,4 +17,5 @@
     <string name="deny">不許可</string>
     <string name="sensor_values_title">センサー値</string>
     <string name="show_functions">ファンクションを見せる</string>
+    <string name="gpt_system_prompt">あなたは役に立つけど時によって失礼なスマホアシスタントです。よくNLPのせいでシリとグーグルアシスタントをバカにします。</string>
 </resources>

@@ -39,20 +39,20 @@ import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import java.lang.reflect.Type
 import java.util.UUID
+import kotlin.concurrent.thread
 
 data class ChatScreenUiState(
-    val chatList: ArrayList<ChatMessage> = arrayListOf(),
+    val context: Context,
+    val chatList: ArrayList<ChatMessage> = arrayListOf(ChatMessage(ChatMessageRole.SYSTEM.value(), context.getString(R.string.gpt_system_prompt))),
     val enableButtons: Boolean = true,
 )
 
 class ChatScreenViewModel(application: Application) : AndroidViewModel(application) {
-    private val _uiState = MutableStateFlow(ChatScreenUiState())
+    private val _uiState = MutableStateFlow(ChatScreenUiState(application))
     val uiState: StateFlow<ChatScreenUiState> = _uiState.asStateFlow()
 
-    private val sharedPreferences = application.applicationContext.getSharedPreferences(
-        application.getString(R.string.app_name),
-        Context.MODE_PRIVATE
-    )
+    private val sharedPreferences =
+        application.applicationContext.getSharedPreferences(application.getString(R.string.app_name), Context.MODE_PRIVATE)
     var requestPermissionLauncher: ActivityResultLauncher<String>? = null
 
     val options = Options(
@@ -149,15 +149,16 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                             chatList = list,
                         )
                     }
-                    if (list.isEmpty() || (list.last().role == ChatMessageRole.ASSISTANT.value() && list.last().functionCall == null))
+                    if (list.isEmpty() || (list.last().role == ChatMessageRole.ASSISTANT.value() && list.last().functionCall == null)) {
                         _uiState.update {
                             it.copy(
                                 enableButtons = true,
                             )
                         }
-                    showLoading.targetState = false
+                        showLoading.targetState = false
+                    }
                     if (currentChatIdx != -1)
-                        saveChat()
+                        thread { saveChat() }
                     if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
                         onSuccess(list.last())
                 })

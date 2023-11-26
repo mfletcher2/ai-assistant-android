@@ -139,10 +139,10 @@ class ChatAPI(
     ) {
         val numTokens = tokensUsed + encoding.countTokens(list[list.size - 1].content)
         Log.i("ChatAPI", "Number of tokens: $numTokens")
-        if (numTokens > maxTokens) {
+        if (numTokens > maxTokens && list.size > 1) {
             Log.i("ChatAPI", "Too many tokens, truncating messages")
-            list.removeAt(0)
-            tokensUsed -= encoding.countTokens(list[0].content)
+            list.removeAt(1)
+            tokensUsed -= encoding.countTokens(list[1].content)
             countTokensAndTruncate(list, encoding, maxTokens)
         }
     }
