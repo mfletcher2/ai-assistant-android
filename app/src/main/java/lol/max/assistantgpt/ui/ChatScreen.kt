@@ -23,7 +23,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -112,7 +112,7 @@ import lol.max.assistantgpt.ui.dialog.SettingsDialog
 import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
 import lol.max.assistantgpt.ui.viewmodel.DialogTypes
-import java.util.Random
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -515,7 +515,7 @@ fun ChatTopAppBar(
                 targetState = title,
                 label = "title",
                 transitionSpec = {
-                    (slideInVertically { height -> -height } + fadeIn()).togetherWith(slideOutVertically { height -> -height } + fadeOut()) using SizeTransform(
+                    (slideInVertically { height -> -height } + fadeIn() with slideOutVertically { height -> -height } + fadeOut()) using SizeTransform(
                         false
                     )
                 }) { newTitle ->
