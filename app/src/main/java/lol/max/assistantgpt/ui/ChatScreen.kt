@@ -307,7 +307,7 @@ fun ChatScreen(
                 onDismissRequest = { viewModel.updateShowDialog(DialogTypes.NONE) },
                 onConfirm = {
                     coroutineScope.launch(Dispatchers.IO) {
-                        viewModel.saveChat(it)
+                        viewModel.saveChat(it.trim())
                         snackBarHostState.showSnackbar("Saved ${viewModel.savedChats[viewModel.currentChatIdx].name}")
                     }
                 })
@@ -534,32 +534,23 @@ fun ChatTopAppBar(
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-            Box {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = newChat,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
-                    IconButton(onClick = onSave, enabled = enableButton) {
+            AnimatedContent(
+                targetState = newChat, transitionSpec = { fadeIn() + scaleIn() with fadeOut() + scaleOut() },
+                label = "Save button"
+            ) {
+                IconButton(onClick = { if (it) onSave() else onDelete() }, enabled = enableButton) {
+                    if (it)
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_save_as_24),
                             contentDescription = "Save",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
-                    }
-                }
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = !newChat,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
-                    IconButton(onClick = onDelete, enabled = enableButton) {
+                    else
                         Icon(
                             imageVector = Icons.Filled.Delete,
                             contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
-                    }
                 }
             }
             IconButton(onClick = { updateDialog(DialogTypes.INFO) }) {
