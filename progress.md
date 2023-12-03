@@ -1,3 +1,9 @@
+### Week 3 (Nov. 27)
+Added weather (from the National Weather Service) and web searching (from Google) functions.
+<video height=700 controls>
+  <source src="videos/week3.webm" type="video/webm">
+</video>
+
 ### Week 2 (Nov. 20)
 Added OpenAI Chat API, TextToSpeech, and SpeechRecognizer functionality. The OpenAI API is sometimes very slow, as you can see in the video. The Android emulator doesn't have a microphone so you'll just have to trust me when I say that the speech recognition works.
 
