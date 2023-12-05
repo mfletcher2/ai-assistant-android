@@ -45,6 +45,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -320,11 +321,17 @@ fun MessageCard(msg: ChatMessage) {
                 }
             ) {
                 SelectionContainer {
-                    Text(
-                        text = msg.content
+                    MarkdownText(
+                        markdown = msg.content
                             ?: (msg.functionCall.name + msg.functionCall.arguments.toPrettyString()),
                         modifier = Modifier.padding(8.dp),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = when (msg.role) {
+                            ChatMessageRole.ASSISTANT.value() -> MaterialTheme.colorScheme.onPrimaryContainer
+                            ChatMessageRole.USER.value() -> MaterialTheme.colorScheme.onSecondaryContainer
+                            else -> MaterialTheme.colorScheme.onTertiaryContainer
+                        },
+                        linkColor = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }

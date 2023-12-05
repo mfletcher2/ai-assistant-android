@@ -38,7 +38,7 @@ class WeatherAPI {
 
     fun getWeather(address: String): List<Period> {
         val latLonRequest = googleGeocodeService.getLatLon(address).request()
-        Log.i("WeatherAPI", "Doing geocode request: ${latLonRequest.url()}")
+        Log.i("WeatherAPI", "Doing geocode request: ${latLonRequest.url}")
         val latLonResponse = googleGeocodeService.getLatLon(address).execute()
 
         Log.i(
@@ -83,7 +83,7 @@ class WeatherByLatLonAPI : Functions.LateResponse() {
 
     fun getWeather(latitude: Float, longitude: Float): List<Period> {
         val stationRequest = nwsApiService.getStationInfo(latitude, longitude).request()
-        Log.i("WeatherAPI", "Doing station request: ${stationRequest.url()}")
+        Log.i("WeatherAPI", "Doing station request: ${stationRequest.url}")
         val stationResponse = nwsApiService.getStationInfo(latitude, longitude).execute()
         Log.i(
             "WeatherAPI",
@@ -94,7 +94,7 @@ class WeatherByLatLonAPI : Functions.LateResponse() {
         val gridY = stationResponse.body()!!.properties.gridY
 
         val weatherRequest = nwsApiService.getForecast(office, gridX, gridY).request()
-        Log.i("WeatherAPI", "Doing weather request: ${weatherRequest.url()}")
+        Log.i("WeatherAPI", "Doing weather request: ${weatherRequest.url}")
         val forecastResponse = nwsApiService.getForecast(office, gridX, gridY).execute()
         Log.i(
             "WeatherAPI",
