@@ -3,6 +3,17 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Creates a variable called keystorePropertiesFile, and initializes it to the
+// keystore.properties file.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+
+// Initializes a new Properties() object called keystoreProperties.
+def keystoreProperties = new Properties()
+
+// Loads the keystore.properties file into the keystoreProperties object.
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+
 android {
     namespace 'lol.max.assistantgpt'
     compileSdk 34
@@ -25,14 +36,16 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField("String", "OPENAI_API_KEY", "\"${env.OPENAI_API_KEY.value}\"")
-            buildConfigField("String", "GOOGLE_API_KEY", "\"${env.GOOGLE_API_KEY.value}\"")
-            buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${env.GOOGLE_SEARCH_ID.value}\"")
+            buildConfigField("String", "OPENAI_API_KEY", "\"${keystoreProperties['OPENAI_API_KEY']}\"")
+            buildConfigField("String", "GOOGLE_API_KEY", "\"${keystoreProperties['GOOGLE_API_KEY']}\"")
+            buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${keystoreProperties['GOOGLE_SEARCH_ID']}\"")
+            buildConfigField("String", "NYT_API_KEY", "\"${keystoreProperties['NYT_API_KEY']}\"")
         }
         debug {
-            buildConfigField("String", "OPENAI_API_KEY", "\"${env.OPENAI_API_KEY.value}\"")
-            buildConfigField("String", "GOOGLE_API_KEY", "\"${env.GOOGLE_API_KEY.value}\"")
-            buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${env.GOOGLE_SEARCH_ID.value}\"")
+            buildConfigField("String", "OPENAI_API_KEY", "\"${keystoreProperties['OPENAI_API_KEY']}\"")
+            buildConfigField("String", "GOOGLE_API_KEY", "\"${keystoreProperties['GOOGLE_API_KEY']}\"")
+            buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${keystoreProperties['GOOGLE_SEARCH_ID']}\"")
+            buildConfigField("String", "NYT_API_KEY", "\"${keystoreProperties['NYT_API_KEY']}\"")
         }
     }
     compileOptions {

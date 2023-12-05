@@ -11,9 +11,7 @@ import com.theokanning.openai.completion.chat.ChatCompletionRequest
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.OpenAiService
-import com.theokanning.openai.service.OpenAiService.defaultClient
-import com.theokanning.openai.service.OpenAiService.defaultObjectMapper
-import com.theokanning.openai.service.OpenAiService.defaultRetrofit
+import com.theokanning.openai.service.OpenAiService.*
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -37,7 +35,7 @@ class ChatAPI(
 
     private var encodingRegistry = Encodings.newLazyEncodingRegistry()
 
-    private var tokensUsed: Long = 0
+    var tokensUsed: Long = 0
 
     fun getCompletion(
         chatMessages: ArrayList<ChatMessage>,
@@ -104,6 +102,11 @@ class ChatAPI(
                         )
                         messagesListCopy.add(it)
                         updateChatMessageList(messagesListCopy)
+                        countTokensAndTruncate(
+                            messagesListCopy,
+                            encodingRegistry.getEncodingForModel(model.name).get(),
+                            model.maxTokens
+                        )
                         getCompletion(
                             chatMessages = messagesListCopy,
                             model = model,
@@ -164,7 +167,7 @@ class ChatAPI(
 data class GPTModel(val name: String, val maxTokens: Int)
 
 val availableModels = listOf(
-    GPTModel("gpt-3.5-turbo", 4096),
+    GPTModel("gpt-3.5-turbo", 3400),
     GPTModel("gpt-4", 4096)
 )
 

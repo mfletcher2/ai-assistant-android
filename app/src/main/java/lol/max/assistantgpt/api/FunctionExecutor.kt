@@ -32,48 +32,58 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
         val arguments =
             gson.fromJson(functionCall.arguments.toPrettyString(), function?.parametersClass)
 
-        if (!functions.requiresPermission.containsKey(function)) {
+        try {
+            if (!functions.requiresPermission.containsKey(function)) {
+                val chatMessage = ChatMessage(
+                    ChatMessageRole.FUNCTION.value(),
+                    gson.toJson(function?.executor?.apply(arguments)!!),
+                    functionCall.name
+                )
+                onFinished(chatMessage)
+
+            } else {
+                val permissionPair = functions.requiresPermission[function]!!
+
+                val class1 = arguments as Functions.LateResponse
+                class1.onSuccess = {
+                    val chatMessage = ChatMessage(
+                        ChatMessageRole.FUNCTION.value(),
+                        gson.toJson(it),
+                        functionCall.name
+                    )
+                    onFinished(chatMessage)
+                }
+
+                onGranted =
+                    { (function?.executor?.apply(arguments)) as Unit }
+
+                onDenied = {
+                    val chatMessage = ChatMessage(
+                        ChatMessageRole.FUNCTION.value(),
+                        gson.toJson("Permission denied."),
+                        functionCall.name
+                    )
+                    onFinished(chatMessage)
+                }
+                sensorRequest.permission = permissionPair.first ?: ""
+                sensorRequest.sensorName = permissionPair.second
+                sensorRequest.onGranted = {
+                    if (permissionPair.first != null)
+                        permissionRequestLauncher.launch(permissionPair.first)
+                    else
+                        onGranted()
+                }
+                sensorRequest.onDenied = { onDenied() }
+                sensorRequest.showDialog()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
             val chatMessage = ChatMessage(
                 ChatMessageRole.FUNCTION.value(),
-                gson.toJson(function?.executor?.apply(arguments)!!),
+                "Error: ${e.message}",
                 functionCall.name
             )
             onFinished(chatMessage)
-
-        } else {
-            val permissionPair = functions.requiresPermission[function]!!
-
-            val class1 = arguments as Functions.LateResponse
-            class1.onSuccess = {
-                val chatMessage = ChatMessage(
-                    ChatMessageRole.FUNCTION.value(),
-                    gson.toJson(it),
-                    functionCall.name
-                )
-                onFinished(chatMessage)
-            }
-
-            onGranted =
-                { (function?.executor?.apply(arguments)) as Unit }
-
-            onDenied = {
-                val chatMessage = ChatMessage(
-                    ChatMessageRole.FUNCTION.value(),
-                    gson.toJson("Permission denied."),
-                    functionCall.name
-                )
-                onFinished(chatMessage)
-            }
-            sensorRequest.permission = permissionPair.first ?: ""
-            sensorRequest.sensorName = permissionPair.second
-            sensorRequest.onGranted = {
-                if (permissionPair.first != null)
-                    permissionRequestLauncher.launch(permissionPair.first)
-                else
-                    onGranted()
-            }
-            sensorRequest.onDenied = { onDenied() }
-            sensorRequest.showDialog()
         }
     }
 

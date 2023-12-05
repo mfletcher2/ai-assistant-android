@@ -11,7 +11,8 @@
     <string name="privacy">Privacy</string>
     <string name="info_dialog">"This app is powered by OpenAI's GPT API. It is not an official app from OpenAI.\n
         \nWeb\n searches provided by the Google Custom Search Engine\nWeather provided by the National Weather\n
-        Service\nGeocoding API provided by Google\n \nopenai-java © TheoKanning\nRetrofit and OkHttp © Square\nJTokkit ©
+        Service\nGeocoding API provided by Google\nNews provided by the New York Times\n
+        \nopenai-java © TheoKanning\nRetrofit and OkHttp © Square\nJTokkit ©
         Knuddels\nMarkdownText © jeziellago\nAndroid libraries © Android Open Source Project\n\nThis program is\n
         distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of\n
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n "

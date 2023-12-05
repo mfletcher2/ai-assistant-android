@@ -1,7 +1,9 @@
 package lol.max.assistantgpt.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_DENIED
+import android.net.Uri
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.widget.Toast
@@ -21,7 +23,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.Send
@@ -266,6 +267,7 @@ fun ChatScreen(
 fun MessageCard(msg: ChatMessage) {
     if (msg.content == null) return
     val msgCorner = 12.dp
+    val context = LocalContext.current
     Row(
         modifier = Modifier.padding(8.dp),
         verticalAlignment = Alignment.Bottom
@@ -320,7 +322,6 @@ fun MessageCard(msg: ChatMessage) {
                     else -> MaterialTheme.colorScheme.tertiaryContainer
                 }
             ) {
-                SelectionContainer {
                     MarkdownText(
                         markdown = msg.content
                             ?: (msg.functionCall.name + msg.functionCall.arguments.toPrettyString()),
@@ -331,9 +332,14 @@ fun MessageCard(msg: ChatMessage) {
                             ChatMessageRole.USER.value() -> MaterialTheme.colorScheme.onSecondaryContainer
                             else -> MaterialTheme.colorScheme.onTertiaryContainer
                         },
-                        linkColor = MaterialTheme.colorScheme.onPrimary
+                        isTextSelectable = true,
+                        linkColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        onLinkClicked = {
+                            val intent = Intent(Intent.ACTION_VIEW)
+                            intent.data = Uri.parse(it)
+                            context.startActivity(intent)
+                        }
                     )
-                }
             }
         }
     }

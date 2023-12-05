@@ -44,13 +44,21 @@ class Functions(context: Context, private val sensorFunctions: SensorFunctions) 
             weatherChatFunction,
             weatherByLocationChatFunction,
             dateAndTimeChatFunction,
+            nytTopStoriesFunction,
+            nytArticleSearchFunction,
             sensorFunctions.accelerometerChatFunction,
             sensorFunctions.lightChatFunction,
             sensorFunctions.orientationChatFunction,
             sensorFunctions.pressureChatFunction,
             sensorFunctions.stepCounterChatFunction
         )
-        else listOf(cseChatFunction, weatherChatFunction, dateAndTimeChatFunction)
+        else listOf(
+            cseChatFunction,
+            weatherChatFunction,
+            dateAndTimeChatFunction,
+            nytTopStoriesFunction,
+            nytArticleSearchFunction
+        )
     }
 
     val requiresPermission: Map<ChatFunction, Pair<String?, String>> =

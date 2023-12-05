@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
@@ -38,12 +39,17 @@ import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.api.availableModels
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import java.lang.reflect.Type
-import java.util.UUID
+import java.util.*
 import kotlin.concurrent.thread
 
 data class ChatScreenUiState(
     val context: Context,
-    val chatList: ArrayList<ChatMessage> = arrayListOf(ChatMessage(ChatMessageRole.SYSTEM.value(), context.getString(R.string.gpt_system_prompt))),
+    val chatList: ArrayList<ChatMessage> = arrayListOf(
+        ChatMessage(
+            ChatMessageRole.SYSTEM.value(),
+            context.getString(R.string.gpt_system_prompt)
+        )
+    ),
     val enableButtons: Boolean = true,
 )
 
@@ -52,7 +58,10 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     val uiState: StateFlow<ChatScreenUiState> = _uiState.asStateFlow()
 
     private val sharedPreferences =
-        application.applicationContext.getSharedPreferences(application.getString(R.string.app_name), Context.MODE_PRIVATE)
+        application.applicationContext.getSharedPreferences(
+            application.getString(R.string.app_name),
+            Context.MODE_PRIVATE
+        )
     var requestPermissionLauncher: ActivityResultLauncher<String>? = null
 
     val options = Options(
@@ -251,8 +260,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             val newChat = Chat(name, UUID.randomUUID().toString())
             savedChats.add(newChat)
             currentChatIdx = savedChats.size - 1
-            sharedPreferences.edit().putString("savedChats", gson.toJson(savedChats)).apply()
         }
+
+        savedChats[currentChatIdx].numTokens = chatApi.tokensUsed
+        sharedPreferences.edit().putString("savedChats", gson.toJson(savedChats)).apply()
+
         getApplication<Application>().openFileOutput(
             savedChats[currentChatIdx].uuid,
             Context.MODE_PRIVATE
@@ -277,7 +289,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 newMessageAnimated = true
                 showLoading.targetState = false
             }
-
+        chatApi.tokensUsed = savedChats[index].numTokens
+        Log.i(null, "Loaded chat ${savedChats[index].uuid} with ${chatApi.tokensUsed} tokens")
     }
 
     fun deleteChat() {
@@ -310,6 +323,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
 data class Chat(
     val name: String,
     val uuid: String,
+    var numTokens: Long = 0
 )
 
 data class Options(
