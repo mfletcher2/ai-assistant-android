@@ -6,6 +6,7 @@ import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.net.Uri
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
@@ -337,6 +338,7 @@ fun MessageCard(msg: ChatMessage) {
                         onLinkClicked = {
                             val intent = Intent(Intent.ACTION_VIEW)
                             intent.data = Uri.parse(it)
+                            Log.i("AssistantGPT", "Opening link: $it")
                             context.startActivity(intent)
                         }
                     )

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.theokanning.openai.completion.chat.ChatFunction
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,12 +15,6 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 import kotlin.concurrent.thread
-
-val weatherChatFunction: ChatFunction = ChatFunction.builder()
-    .name("get_weather")
-    .description("Get the weather forecast for a location in the United States.")
-    .executor(WeatherAPI::class.java) { it.getWeather(it.address) }
-    .build()
 
 class WeatherAPI {
     @JsonPropertyDescription("The location to get the weather for. It must at least specify the city and state. Example: New York, NY")
@@ -53,11 +46,11 @@ class WeatherAPI {
         val latitude = latLonResponse.body()!!.results[0].geometry.location.lat
         val longitude = latLonResponse.body()!!.results[0].geometry.location.lng
 
-        return WeatherByLatLonAPI().getWeather(latitude, longitude)
+        return WeatherByLatLonRequest().getWeather(latitude, longitude)
     }
 }
 
-class WeatherByLatLonAPI : Functions.LateResponse() {
+class WeatherByLatLonRequest : LateResponse() {
     @SuppressLint("MissingPermission")
 
     @JsonIgnore

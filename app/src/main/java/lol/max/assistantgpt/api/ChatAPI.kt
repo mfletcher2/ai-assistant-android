@@ -57,8 +57,8 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val functionsObj = Functions(context, sensorFunctions)
-        val functionExecutor = FunctionExecutor(functionsObj.getFunctionList(allowSensors))
+        val chatFunctions = ChatFunctions(context, sensorFunctions.sensorValues)
+        val functionExecutor = FunctionExecutor(chatFunctions.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
             .messages(messagesListCopy)
@@ -91,7 +91,7 @@ class ChatAPI(
                 )
                 functionExecutor.executeAndConvertToMessage(
                     functionCall = responseMessage.functionCall,
-                    functions = functionsObj,
+                    chatFunctions = chatFunctions,
                     permissionRequestLauncher = permissionRequestLauncher,
                     sensorRequest = sensorRequest
                 ) {

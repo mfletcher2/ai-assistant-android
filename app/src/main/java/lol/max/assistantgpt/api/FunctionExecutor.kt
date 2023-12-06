@@ -22,7 +22,7 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
 
     fun executeAndConvertToMessage(
         functionCall: ChatFunctionCall,
-        functions: Functions,
+        chatFunctions: ChatFunctions,
         permissionRequestLauncher: ActivityResultLauncher<String>,
         sensorRequest: SensorRequest,
         onFinished: (ChatMessage) -> Unit
@@ -33,7 +33,7 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
             gson.fromJson(functionCall.arguments.toPrettyString(), function?.parametersClass)
 
         try {
-            if (!functions.requiresPermission.containsKey(function)) {
+            if (!chatFunctions.requiresPermission.containsKey(function)) {
                 val chatMessage = ChatMessage(
                     ChatMessageRole.FUNCTION.value(),
                     gson.toJson(function?.executor?.apply(arguments)!!),
@@ -42,9 +42,9 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
                 onFinished(chatMessage)
 
             } else {
-                val permissionPair = functions.requiresPermission[function]!!
+                val permissionPair = chatFunctions.requiresPermission[function]!!
 
-                val class1 = arguments as Functions.LateResponse
+                val class1 = arguments as LateResponse
                 class1.onSuccess = {
                     val chatMessage = ChatMessage(
                         ChatMessageRole.FUNCTION.value(),
