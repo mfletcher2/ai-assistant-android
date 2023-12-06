@@ -39,11 +39,9 @@ class MainActivity : ComponentActivity() {
                 if (isGranted) {
                     Log.i(getString(R.string.app_name), "Permission granted")
                     FunctionExecutor.onGranted()
-                    FunctionExecutor.onGranted = {}
                 } else {
                     Log.e(getString(R.string.app_name), "Permission denied")
                     FunctionExecutor.onDenied()
-                    FunctionExecutor.onDenied = {}
                 }
             }
         sensorFunctions = SensorFunctions(this)

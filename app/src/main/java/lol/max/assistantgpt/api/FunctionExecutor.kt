@@ -89,6 +89,8 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
 
     companion object {
         var onDenied: () -> Unit? = {}
+            private set
         var onGranted: () -> Unit? = {}
+            private set
     }
 }
