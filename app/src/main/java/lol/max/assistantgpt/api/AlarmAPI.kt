@@ -20,11 +20,9 @@ class SetTimerRequest {
         i.putExtra(AlarmClock.EXTRA_LENGTH, timeSeconds)
         if (message != "") i.putExtra(AlarmClock.EXTRA_MESSAGE, message)
 
-        try {
-            context.startActivity(i)
-        } catch (e: Exception) {
-            return false
-        }
+        if (i.resolveActivity(context.packageManager) == null) return false
+
+        context.startActivity(i)
         return true
     }
 }
@@ -48,11 +46,9 @@ class SetAlarmRequest {
         i.putExtra(AlarmClock.EXTRA_MINUTES, minute)
         if (message != "") i.putExtra(AlarmClock.EXTRA_MESSAGE, message)
 
-        try {
-            context.startActivity(i)
-        } catch (e: Exception) {
-            return false
-        }
+        if (i.resolveActivity(context.packageManager) == null) return false
+
+        context.startActivity(i)
         return true
     }
 }

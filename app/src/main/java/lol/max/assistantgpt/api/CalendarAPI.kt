@@ -3,6 +3,7 @@ package lol.max.assistantgpt.api
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.CalendarContract
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -56,10 +57,13 @@ class CalendarGetEventsRequest : LateResponse() {
 //        val calID: Long = cur.getLong(PROJECTION_ID_INDEX)
             val eventTitle = cur.getString(PROJECTION_TITLE_INDEX) ?: ""
             val eventStart = cur.getLong(PROJECTION_BEGIN_INDEX)
+            val eventId = cur.getLong(PROJECTION_ID_INDEX)
 
             val eventDate = Date(eventStart)
+            val uri: Uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
 
-            result += mapOf("title" to eventTitle, "date" to eventDate.toString())
+
+            result += mapOf("title" to eventTitle, "date" to eventDate.toString(), "uri" to uri.toString())
         }
         cur.close()
 
@@ -121,6 +125,8 @@ class CalendarCreateEventRequest {
             .putExtra(CalendarContract.Events.TITLE, title)
             .putExtra(CalendarContract.Events.DESCRIPTION, description)
             .putExtra(CalendarContract.Events.EVENT_LOCATION, location)
+        if (intent.resolveActivity(context.packageManager) == null) return false
+
         context.startActivity(intent)
 
         return true

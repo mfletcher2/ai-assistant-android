@@ -323,25 +323,28 @@ fun MessageCard(msg: ChatMessage) {
                     else -> MaterialTheme.colorScheme.tertiaryContainer
                 }
             ) {
-                    MarkdownText(
-                        markdown = msg.content
-                            ?: (msg.functionCall.name + msg.functionCall.arguments.toPrettyString()),
-                        modifier = Modifier.padding(8.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = when (msg.role) {
-                            ChatMessageRole.ASSISTANT.value() -> MaterialTheme.colorScheme.onPrimaryContainer
-                            ChatMessageRole.USER.value() -> MaterialTheme.colorScheme.onSecondaryContainer
-                            else -> MaterialTheme.colorScheme.onTertiaryContainer
-                        },
-                        isTextSelectable = true,
-                        linkColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        onLinkClicked = {
-                            val intent = Intent(Intent.ACTION_VIEW)
-                            intent.data = Uri.parse(it)
-                            Log.i("AssistantGPT", "Opening link: $it")
-                            context.startActivity(intent)
-                        }
-                    )
+                MarkdownText(
+                    markdown = msg.content
+                        ?: (msg.functionCall.name + msg.functionCall.arguments.toPrettyString()),
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when (msg.role) {
+                        ChatMessageRole.ASSISTANT.value() -> MaterialTheme.colorScheme.onPrimaryContainer
+                        ChatMessageRole.USER.value() -> MaterialTheme.colorScheme.onSecondaryContainer
+                        else -> MaterialTheme.colorScheme.onTertiaryContainer
+                    },
+                    isTextSelectable = true,
+                    linkColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onLinkClicked = {
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = Uri.parse(it)
+                        Log.i("AssistantGPT", "Opening link: $it")
+                        if (intent.resolveActivity(context.packageManager) == null) {
+                            Toast.makeText(context, "No app found to open link.", Toast.LENGTH_SHORT).show()
+                            Log.e("AssistantGPT", "No app found to open $it")
+                        } else context.startActivity(intent)
+                    }
+                )
             }
         }
     }
