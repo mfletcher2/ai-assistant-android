@@ -54,6 +54,11 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         .description("Create an alarm. Returns true if the alarm was created successfully.")
         .executor(SetAlarmRequest::class.java) { it.setAlarm(contextRef.get()) }
         .build()
+    private val playMusicChatFunction: ChatFunction = ChatFunction.builder()
+        .name("play_music")
+        .description("Play music. Returns true if the music was played successfully.")
+        .executor(PlayMusicRequest::class.java) { it.playMusic(contextRef.get()) }
+        .build()
 
     // functions that access sensors
     private val accelerometerChatFunction: ChatFunction = ChatFunction.builder()
@@ -92,7 +97,8 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
             calendarGetEventsChatFunction,
             calendarCreateEventChatFunction,
             createTimerChatFunction,
-            createAlarmChatFunction
+            createAlarmChatFunction,
+            playMusicChatFunction
         ).apply {
             if (allowSensors) plus( // Add sensor functions if allowed
                 listOf(

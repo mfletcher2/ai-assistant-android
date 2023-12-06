@@ -1,8 +1,10 @@
 package lol.max.assistantgpt.api
 
+import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
+import android.provider.MediaStore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import java.time.LocalDate
@@ -74,4 +76,19 @@ data class DateAndTime(
     val minute: Int,
     val second: Int
 )
+
+class PlayMusicRequest {
+    @JsonPropertyDescription("The music to search for.")
+    var query: String = ""
+
+    fun playMusic(context: Context?): Boolean {
+        if (context == null) return false
+        val i = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
+        i.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+        i.putExtra(SearchManager.QUERY, query)
+        if (i.resolveActivity(context.packageManager) == null) return false
+        context.startActivity(i)
+        return true
+    }
+}
 
