@@ -34,71 +34,78 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         .description("Get the weather forecast for the user's current location.")
         .executor(WeatherByLatLonRequest::class.java) { it.getWeatherFromLocation(contextRef.get()) }
         .build()
-    val calendarGetEventsChatFunction: ChatFunction = ChatFunction.builder()
+    private val calendarGetEventsChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_calendar_events")
         .description("Get the user's calendar events.")
         .executor(CalendarGetEventsRequest::class.java) { it.getEvents(contextRef.get()) }
         .build()
-    val calendarCreateEventChatFunction: ChatFunction = ChatFunction.builder()
+    private val calendarCreateEventChatFunction: ChatFunction = ChatFunction.builder()
         .name("create_calendar_event")
         .description("Create a calendar event. Returns true if the event was created successfully. Ask the user if all required information is not given. If given a relative date, always confirm the current date with get_date_and_time.")
         .executor(CalendarCreateEventRequest::class.java) { it.createEvent(contextRef.get()) }
         .build()
-
+    private val createTimerChatFunction: ChatFunction = ChatFunction.builder()
+        .name("create_timer")
+        .description("Create a timer. Returns true if the timer was created successfully.")
+        .executor(SetTimerRequest::class.java) { it.setTimer(contextRef.get()) }
+        .build()
+    private val createAlarmChatFunction: ChatFunction = ChatFunction.builder()
+        .name("create_alarm")
+        .description("Create an alarm. Returns true if the alarm was created successfully.")
+        .executor(SetAlarmRequest::class.java) { it.setAlarm(contextRef.get()) }
+        .build()
 
     // functions that access sensors
-    val accelerometerChatFunction: ChatFunction = ChatFunction.builder()
+    private val accelerometerChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_accelerometer")
         .description("Get the current device's accelerometer x, y, and z values in meters per second squared. The accelerometer takes into account acceleration due to gravity.")
         .executor(LateResponse::class.java) { it.onSuccess(sensorValues.accelerometer) }
         .build()
-    val lightChatFunction: ChatFunction = ChatFunction.builder()
+    private val lightChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_light")
         .description("Get the current device's light sensor value in lux.")
         .executor(LateResponse::class.java) { it.onSuccess(sensorValues.light) }
         .build()
-    val orientationChatFunction: ChatFunction = ChatFunction.builder()
+    private val orientationChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_orientation")
         .description("Get the current device's orientation azimuth, pitch, and roll values in radians.")
         .executor(SensorFunctions.OrientationRequest::class.java) { it.getOrientation(sensorValues) }
         .build()
-    val pressureChatFunction: ChatFunction = ChatFunction.builder()
+    private val pressureChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_pressure")
         .description("Get the current device's pressure sensor value in hectopascals.")
         .executor(LateResponse::class.java) { it.onSuccess(sensorValues.pressure) }
         .build()
-    val stepCounterChatFunction: ChatFunction = ChatFunction.builder()
+    private val stepCounterChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_step_counter")
         .description("Get the current device's step counter value. This value counts the number of steps taken since the device was last rebooted.")
         .executor(LateResponse::class.java) { it.onSuccess(sensorValues.stepCounter) }
         .build()
 
     fun getFunctionList(allowSensors: Boolean = true): List<ChatFunction> {
-        return if (allowSensors) listOf(
+        return listOf(
             cseChatFunction,
-            appsListChatFunction,
-            launchPackageChatFunction,
             weatherChatFunction,
-            weatherByLocationChatFunction,
             dateAndTimeChatFunction,
             nytTopStoriesFunction,
             nytArticleSearchFunction,
             calendarGetEventsChatFunction,
             calendarCreateEventChatFunction,
-            accelerometerChatFunction,
-            lightChatFunction,
-            orientationChatFunction,
-            pressureChatFunction,
-            stepCounterChatFunction
-        )
-        else listOf(
-            cseChatFunction,
-            weatherChatFunction,
-            dateAndTimeChatFunction,
-            nytTopStoriesFunction,
-            nytArticleSearchFunction,
-            calendarGetEventsChatFunction
-        )
+            createTimerChatFunction,
+            createAlarmChatFunction
+        ).apply {
+            if (allowSensors) plus( // Add sensor functions if allowed
+                listOf(
+                    appsListChatFunction,
+                    launchPackageChatFunction,
+                    accelerometerChatFunction,
+                    lightChatFunction,
+                    orientationChatFunction,
+                    pressureChatFunction,
+                    stepCounterChatFunction
+                )
+            )
+        }
     }
 
     val requiresPermission: Map<ChatFunction, Pair<String?, String>> =
