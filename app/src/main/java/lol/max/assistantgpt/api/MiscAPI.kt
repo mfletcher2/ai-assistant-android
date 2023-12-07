@@ -78,16 +78,47 @@ data class DateAndTime(
 )
 
 class PlayMusicRequest {
-    @JsonPropertyDescription("The music to search for.")
-    var query: String = ""
+    var songTitle: String? = null
+    var artist: String? = null
+    var album: String? = null
+    var genre: String? = null
 
     fun playMusic(context: Context?): Boolean {
         if (context == null) return false
-        val i = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
-        i.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
-        i.putExtra(SearchManager.QUERY, query)
-        if (i.resolveActivity(context.packageManager) == null) return false
-        context.startActivity(i)
+        val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
+
+        if (songTitle != null) {
+            intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/audio")
+            intent.putExtra(MediaStore.EXTRA_MEDIA_TITLE, songTitle)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_ARTIST, artist)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_ALBUM, album)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_GENRE, genre)
+            intent.putExtra(SearchManager.QUERY, songTitle)
+        } else if (album != null) {
+            intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Albums.ENTRY_CONTENT_TYPE)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_ALBUM, album)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_ARTIST, artist)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_GENRE, genre)
+            intent.putExtra(SearchManager.QUERY, album)
+        } else if (artist != null) {
+            intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_ARTIST, artist)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_GENRE, genre)
+            intent.putExtra(SearchManager.QUERY, artist)
+        } else if (genre != null) {
+            intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Genres.ENTRY_CONTENT_TYPE)
+            intent.putExtra(MediaStore.EXTRA_MEDIA_GENRE, genre)
+            intent.putExtra(SearchManager.QUERY, genre)
+        } else {
+            intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+            intent.putExtra(SearchManager.QUERY, "")
+        }
+
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            return false
+        }
         return true
     }
 }
