@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.api
+package lol.max.assistantgpt.api.chat
 
 import androidx.activity.result.ActivityResultLauncher
 import com.google.gson.Gson

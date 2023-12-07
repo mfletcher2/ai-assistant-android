@@ -1,0 +1,5 @@
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+                           android:sessionService="lol.max.assistantgpt.api.voice.GPTInteractionSessionService"
+                           android:recognitionService="com.android.test.voiceinteraction.MainRecognitionService"
+                           android:settingsActivity="lol.max.assistantgpt.MainActivity"
+                           android:supportsAssist="true"/>

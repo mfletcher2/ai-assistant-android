@@ -8,6 +8,7 @@ import android.hardware.SensorManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import lol.max.assistantgpt.api.chat.LateResponse
 
 class SensorFunctions(context: Context) : SensorEventListener {
     private var sensorManager: SensorManager

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.CalendarContract
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import lol.max.assistantgpt.api.chat.LateResponse
 import java.util.*
 
 class CalendarGetEventsRequest : LateResponse() {

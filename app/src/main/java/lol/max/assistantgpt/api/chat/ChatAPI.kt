@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.api
+package lol.max.assistantgpt.api.chat
 
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -12,6 +12,7 @@ import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.*
+import lol.max.assistantgpt.api.SensorFunctions
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

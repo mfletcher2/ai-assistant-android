@@ -53,8 +53,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.RecognitionListener
 import lol.max.assistantgpt.api.SensorFunctions
+import lol.max.assistantgpt.api.voice.RecognitionListener
 import lol.max.assistantgpt.ui.dialog.*
 import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel

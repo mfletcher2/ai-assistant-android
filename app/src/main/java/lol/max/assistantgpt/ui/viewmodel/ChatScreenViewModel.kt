@@ -33,10 +33,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.ChatAPI
-import lol.max.assistantgpt.api.GPTModel
 import lol.max.assistantgpt.api.SensorFunctions
-import lol.max.assistantgpt.api.availableModels
+import lol.max.assistantgpt.api.chat.ChatAPI
+import lol.max.assistantgpt.api.chat.GPTModel
+import lol.max.assistantgpt.api.chat.availableModels
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import java.lang.reflect.Type
 import java.util.*

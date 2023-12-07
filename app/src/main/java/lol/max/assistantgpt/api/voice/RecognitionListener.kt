@@ -1,4 +1,4 @@
-package lol.max.assistantgpt.api
+package lol.max.assistantgpt.api.voice
 
 import android.os.Bundle
 import android.speech.SpeechRecognizer

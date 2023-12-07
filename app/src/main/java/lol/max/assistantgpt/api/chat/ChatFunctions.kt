@@ -1,9 +1,10 @@
-package lol.max.assistantgpt.api
+package lol.max.assistantgpt.api.chat
 
 import android.Manifest
 import android.content.Context
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.theokanning.openai.completion.chat.ChatFunction
+import lol.max.assistantgpt.api.*
 import java.lang.ref.WeakReference
 
 class ChatFunctions(context: Context, sensorValues: SensorValues) {

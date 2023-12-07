@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import lol.max.assistantgpt.api.FunctionExecutor
 import lol.max.assistantgpt.api.SensorFunctions
+import lol.max.assistantgpt.api.chat.FunctionExecutor
 import lol.max.assistantgpt.ui.ChatScreen
 import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 

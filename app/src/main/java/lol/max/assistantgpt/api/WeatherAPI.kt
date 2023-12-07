@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import lol.max.assistantgpt.api.chat.LateResponse
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
