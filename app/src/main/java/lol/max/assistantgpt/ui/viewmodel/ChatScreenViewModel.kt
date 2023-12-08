@@ -6,13 +6,10 @@ import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,19 +21,17 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.SensorFunctions
+import lol.max.assistantgpt.api.SensorValues
 import lol.max.assistantgpt.api.chat.ChatAPI
 import lol.max.assistantgpt.api.chat.GPTModel
 import lol.max.assistantgpt.api.chat.availableModels
+import lol.max.assistantgpt.api.voice.RecognitionListener
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import java.lang.reflect.Type
 import java.util.*
@@ -62,7 +57,6 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             application.getString(R.string.app_name),
             Context.MODE_PRIVATE
         )
-    var requestPermissionLauncher: ActivityResultLauncher<String>? = null
 
     val options = Options(
         model = Gson().fromJson(
@@ -117,12 +111,39 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         onClose = { updateShowDialog(DialogTypes.NONE) },
         showDialog = { updateShowDialog(DialogTypes.SENSOR) })
 
+    private val tts = TextToSpeech(
+        application
+    ) { status ->
+        if (status == TextToSpeech.SUCCESS)
+            Log.i(application.getString(R.string.app_name), "TTS initialized")
+        else Log.e(application.getString(R.string.app_name), "TTS failed to initialize")
+    }
+
+    private fun speakText(string: String?) {
+        if (string != null)
+            tts.speak(string, TextToSpeech.QUEUE_FLUSH, null, Random().nextInt().toString())
+    }
+
+    private val stt: SpeechRecognizer =
+        if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(application))
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(application)
+        else SpeechRecognizer.createSpeechRecognizer(application)
+
+    var sensorValues = SensorValues()
+    var requestPermission: (String) -> Unit = { }
+
+    init {
+        stt.setRecognitionListener(
+            RecognitionListener(
+                { updateChatInput(it) },
+                {
+                    endVoiceChatInput(it) { str -> speakText(str) }
+                })
+        )
+    }
+
     fun sendChatInput(
-        activity: ComponentActivity,
-        snackbarHostState: SnackbarHostState,
-        coroutineScope: CoroutineScope,
-        sensorFunctions: SensorFunctions,
-        onSuccess: (ChatMessage) -> Unit
+        showUserMessage: (String) -> Unit,
     ) {
         if (chatInput == "") return
         val newChatList = _uiState.value.chatList
@@ -137,21 +158,18 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         showLoading.targetState = true
         chatInput = ""
 
-        coroutineScope.launch(Dispatchers.IO) {
+        thread {
             chatApi.getCompletion(
                 chatMessages = _uiState.value.chatList,
                 model = options.model,
-                context = activity,
+                context = getApplication(),
                 allowSensors = options.allowSensors,
-                permissionRequestLauncher = requestPermissionLauncher!!,
                 sensorRequest = sensorRequest,
-                sensorFunctions = sensorFunctions,
+                sensorValues = sensorValues,
                 showFunctions = options.showFunctions,
-                showMessage = {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
-                    }
-                }, updateChatMessageList = { list ->
+                showMessage = showUserMessage,
+                requestPermission = requestPermission,
+                updateChatMessageList = { list ->
                     newMessageAnimated = false
                     _uiState.update {
                         it.copy(
@@ -169,17 +187,18 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                     if (currentChatIdx != -1)
                         thread { saveChat() }
                     if (list.isNotEmpty() && list.last().content != null && list.last().role == ChatMessageRole.ASSISTANT.value())
-                        onSuccess(list.last())
+                        speakText(list.last().content)
                 })
         }
     }
 
-    fun startChatVoiceInput(stt: SpeechRecognizer) {
+    fun startVoiceChatInput() {
         _uiState.update {
             it.copy(
                 enableButtons = false
             )
         }
+        tts.stop()
         updateShowDialog(DialogTypes.VOICE)
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -197,21 +216,10 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         stt.startListening(i)
     }
 
-    fun endVoiceChatInput(
-        activity: ComponentActivity,
-        statusCode: Int, coroutineScope: CoroutineScope,
-        snackbarHostState: SnackbarHostState,
-        sensorFunctions: SensorFunctions,
-        onSuccess: (String) -> Unit
-    ) {
+    fun endVoiceChatInput(statusCode: Int, showUserMessage: (String) -> Unit) {
         updateShowDialog(DialogTypes.NONE)
         if (statusCode == 0 && chatInput != "") {
-            sendChatInput(
-                activity,
-                snackbarHostState,
-                coroutineScope,
-                sensorFunctions
-            ) { onSuccess(_uiState.value.chatList.last().content) }
+            sendChatInput(showUserMessage)
         } else _uiState.update {
             it.copy(
                 enableButtons = true
@@ -219,9 +227,8 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun cancelVoiceChatInput(stt: SpeechRecognizer?) {
-        updateShowDialog(DialogTypes.NONE)
-        stt?.cancel()
+    fun cancelVoiceChatInput() {
+        stt.cancel()
         _uiState.update {
             it.copy(
                 enableButtons = true

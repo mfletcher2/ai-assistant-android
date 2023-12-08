@@ -4,12 +4,9 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.net.Uri
-import android.speech.SpeechRecognizer
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.*
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring.DampingRatioLowBouncy
@@ -53,8 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
-import lol.max.assistantgpt.api.SensorFunctions
-import lol.max.assistantgpt.api.voice.RecognitionListener
+import lol.max.assistantgpt.api.SensorValues
 import lol.max.assistantgpt.ui.dialog.*
 import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
@@ -64,43 +60,29 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    tts: TextToSpeech?,
-    stt: SpeechRecognizer?,
-    requestPermissionLauncher: ActivityResultLauncher<String>,
-    sensorFunctions: SensorFunctions,
+    sensorValues: SensorValues,
+    requestPermission: (String) -> Unit,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     val random = Random()
     lateinit var activity: ComponentActivity
-    if (LocalContext.current is ComponentActivity)
-        activity = LocalContext.current as ComponentActivity
-    viewModel.requestPermissionLauncher = requestPermissionLauncher
+    if (LocalContext.current is ComponentActivity) activity = LocalContext.current as ComponentActivity
 
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
+    fun showSnackbar(message: String) {
+        coroutineScope.launch { snackBarHostState.showSnackbar(message) }
+    }
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    viewModel.sensorValues = sensorValues
+    viewModel.requestPermission = requestPermission
 
     val micReq = stringResource(id = R.string.microphone_access_required)
 
-    fun speakText(string: String?) {
-        if (string != null)
-            tts?.speak(string, TextToSpeech.QUEUE_FLUSH, null, random.nextInt().toString())
-    }
-    stt?.setRecognitionListener(
-        RecognitionListener(
-            { viewModel.updateChatInput(it) },
-            {
-                viewModel.endVoiceChatInput(
-                    activity,
-                    it,
-                    coroutineScope,
-                    snackBarHostState,
-                    sensorFunctions
-                ) { str -> speakText(str) }
-            })
-    )
     val transitionState = remember { MutableTransitionState(false) }.apply { targetState = true }
     var showChat by remember { mutableStateOf(true) }
 
@@ -124,15 +106,7 @@ fun ChatScreen(
                             onInputTextChanged = { viewModel.updateChatInput(it) },
                             enableButton = uiState.enableButtons,
                             onClickSend = {
-                                viewModel.sendChatInput(
-                                    activity,
-                                    snackBarHostState,
-                                    coroutineScope,
-                                    sensorFunctions
-                                ) {
-                                    if (it.role == ChatMessageRole.ASSISTANT.value())
-                                        speakText(it.content)
-                                }
+                                viewModel.sendChatInput { showSnackbar(it) }
                             },
                             onClickVoice = {
                                 if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
@@ -147,10 +121,7 @@ fun ChatScreen(
                                     )
                                     return@ChatInput
                                 }
-                                if (stt != null) {
-                                    tts?.stop()
-                                    viewModel.startChatVoiceInput(stt)
-                                }
+                                viewModel.startVoiceChatInput()
                             }
                         )
                     }
@@ -227,7 +198,10 @@ fun ChatScreen(
         }, { viewModel.updateTimeoutSec(); viewModel.saveSharedPreferences() })
 
         DialogTypes.INFO -> InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
-        DialogTypes.VOICE -> Dialog(onDismissRequest = { viewModel.cancelVoiceChatInput(stt) }) {
+        DialogTypes.VOICE -> Dialog(onDismissRequest = {
+            viewModel.cancelVoiceChatInput()
+            viewModel.updateShowDialog(DialogTypes.NONE)
+        }) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_mic_24),
                 contentDescription = "Microphone",
@@ -243,7 +217,7 @@ fun ChatScreen(
             )
 
         DialogTypes.SENSOR_INFO ->
-            SensorInfoDialog(sensorValues = sensorFunctions.sensorValues) {
+            SensorInfoDialog(sensorValues = sensorValues) {
                 viewModel.updateShowDialog(
                     DialogTypes.NONE
                 )

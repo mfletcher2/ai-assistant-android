@@ -1,8 +1,7 @@
 package lol.max.assistantgpt.api.chat
 
+import android.content.Context
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.knuddels.jtokkit.Encodings
 import com.knuddels.jtokkit.api.Encoding
@@ -12,7 +11,7 @@ import com.theokanning.openai.completion.chat.ChatMessage
 import com.theokanning.openai.completion.chat.ChatMessageRole
 import com.theokanning.openai.service.OpenAiService
 import com.theokanning.openai.service.OpenAiService.*
-import lol.max.assistantgpt.api.SensorFunctions
+import lol.max.assistantgpt.api.SensorValues
 import lol.max.assistantgpt.ui.dialog.SensorRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -41,13 +40,13 @@ class ChatAPI(
     fun getCompletion(
         chatMessages: ArrayList<ChatMessage>,
         model: GPTModel,
-        context: ComponentActivity,
+        context: Context,
         allowSensors: Boolean,
-        permissionRequestLauncher: ActivityResultLauncher<String>,
         sensorRequest: SensorRequest,
-        sensorFunctions: SensorFunctions,
+        sensorValues: SensorValues,
         showMessage: (String) -> Unit,
         showFunctions: Boolean,
+        requestPermission: (String) -> Unit,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
         val messagesListCopy = ArrayList(chatMessages)
@@ -58,7 +57,7 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val chatFunctions = ChatFunctions(context, sensorFunctions.sensorValues)
+        val chatFunctions = ChatFunctions(context, sensorValues)
         val functionExecutor = FunctionExecutor(chatFunctions.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
@@ -93,8 +92,8 @@ class ChatAPI(
                 functionExecutor.executeAndConvertToMessage(
                     functionCall = responseMessage.functionCall,
                     chatFunctions = chatFunctions,
-                    permissionRequestLauncher = permissionRequestLauncher,
-                    sensorRequest = sensorRequest
+                    sensorRequest = sensorRequest,
+                    requestPermission = requestPermission,
                 ) {
                     thread {
                         Log.i(
@@ -113,10 +112,10 @@ class ChatAPI(
                             model = model,
                             context = context,
                             allowSensors = allowSensors,
-                            permissionRequestLauncher = permissionRequestLauncher,
                             sensorRequest = sensorRequest,
-                            sensorFunctions = sensorFunctions,
+                            sensorValues = sensorValues,
                             showMessage = showMessage,
+                            requestPermission = requestPermission,
                             showFunctions = showFunctions,
                             updateChatMessageList = updateChatMessageList
                         )

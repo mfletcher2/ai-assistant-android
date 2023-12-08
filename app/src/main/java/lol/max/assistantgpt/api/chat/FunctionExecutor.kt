@@ -1,6 +1,5 @@
 package lol.max.assistantgpt.api.chat
 
-import androidx.activity.result.ActivityResultLauncher
 import com.google.gson.Gson
 import com.theokanning.openai.completion.chat.ChatFunction
 import com.theokanning.openai.completion.chat.ChatFunctionCall
@@ -23,8 +22,8 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
     fun executeAndConvertToMessage(
         functionCall: ChatFunctionCall,
         chatFunctions: ChatFunctions,
-        permissionRequestLauncher: ActivityResultLauncher<String>,
         sensorRequest: SensorRequest,
+        requestPermission: (String) -> Unit,
         onFinished: (ChatMessage) -> Unit
     ) {
         val gson = Gson()
@@ -69,7 +68,7 @@ class FunctionExecutor(functionList: List<ChatFunction>) {
                 sensorRequest.sensorName = permissionPair.second
                 sensorRequest.onGranted = {
                     if (permissionPair.first != null)
-                        permissionRequestLauncher.launch(permissionPair.first)
+                        requestPermission(permissionPair.first!!)
                     else
                         onGranted()
                 }

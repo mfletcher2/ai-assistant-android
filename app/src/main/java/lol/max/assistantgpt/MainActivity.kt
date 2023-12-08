@@ -1,9 +1,6 @@
 package lol.max.assistantgpt
 
-import android.os.Build
 import android.os.Bundle
-import android.speech.SpeechRecognizer
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,20 +16,10 @@ import lol.max.assistantgpt.ui.theme.AssistantGPTTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var sensorFunctions: SensorFunctions
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val tts = TextToSpeech(
-            this
-        ) { status ->
-            if (status == TextToSpeech.SUCCESS)
-                Log.i(getString(R.string.app_name), "TTS initialized")
-            else Log.e(getString(R.string.app_name), "TTS failed to initialize")
-        }
-        val stt =
-            if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this))
-                SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
-            else SpeechRecognizer.createSpeechRecognizer(this)
+
+        sensorFunctions = SensorFunctions(this)
 
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -44,7 +31,6 @@ class MainActivity : ComponentActivity() {
                     FunctionExecutor.onDenied()
                 }
             }
-        sensorFunctions = SensorFunctions(this)
 
         // Update UI elements
         setContent {
@@ -53,7 +39,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen(tts, stt, requestPermissionLauncher, sensorFunctions)
+                    ChatScreen(
+                        sensorValues = sensorFunctions.sensorValues,
+                        requestPermission = { requestPermissionLauncher.launch(it) })
                 }
             }
         }
