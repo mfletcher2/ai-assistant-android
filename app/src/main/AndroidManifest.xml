@@ -52,18 +52,6 @@
                 android:permission="android.permission.BIND_VOICE_INTERACTION"
                 android:process=":session">
         </service>
-        <service
-                android:name=".api.voice.GPTRecognitionService"
-                android:label="Test Voice Interaction Service"
-                android:exported="false">
-            <intent-filter>
-                <action android:name="android.speech.RecognitionService"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data
-                    android:name="android.speech"
-                    android:resource="@xml/recognition_service"/>
-        </service>
     </application>
 
     <queries>
