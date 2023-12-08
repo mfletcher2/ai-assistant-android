@@ -89,7 +89,7 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         .build()
 
     fun getFunctionList(allowSensors: Boolean = true): List<ChatFunction> {
-        return listOf(
+        val allowedFunctions = listOf(
             cseChatFunction,
             weatherChatFunction,
             dateAndTimeChatFunction,
@@ -100,18 +100,20 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
             createTimerChatFunction,
             createAlarmChatFunction,
             playMusicChatFunction
-        ).apply {
-            if (allowSensors) plus( // Add sensor functions if allowed
-                listOf(
-                    appsListChatFunction,
-                    launchPackageChatFunction,
-                    accelerometerChatFunction,
-                    lightChatFunction,
-                    orientationChatFunction,
-                    pressureChatFunction,
-                    stepCounterChatFunction
-                )
-            )
+        )
+        val permissionFunctions = listOf(
+            appsListChatFunction,
+            launchPackageChatFunction,
+            accelerometerChatFunction,
+            lightChatFunction,
+            orientationChatFunction,
+            pressureChatFunction,
+            stepCounterChatFunction
+        )
+        return if (allowSensors) {
+            allowedFunctions + permissionFunctions
+        } else {
+            allowedFunctions
         }
     }
 
