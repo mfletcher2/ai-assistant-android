@@ -21,6 +21,8 @@ class MainActivity : ComponentActivity() {
 
         sensorFunctions = SensorFunctions(this)
 
+        val startVoiceInput = intent?.getBooleanExtra("voice", false) ?: false
+
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
                 if (isGranted) {
@@ -41,6 +43,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     ChatScreen(
                         sensorValues = sensorFunctions.sensorValues,
+                        startVoiceInput = startVoiceInput,
                         requestPermission = { requestPermissionLauncher.launch(it) })
                 }
             }

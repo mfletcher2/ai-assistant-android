@@ -1,8 +1,6 @@
 package lol.max.assistantgpt.ui
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -55,18 +53,17 @@ import lol.max.assistantgpt.ui.dialog.*
 import lol.max.assistantgpt.ui.viewmodel.Chat
 import lol.max.assistantgpt.ui.viewmodel.ChatScreenViewModel
 import lol.max.assistantgpt.ui.viewmodel.DialogTypes
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     sensorValues: SensorValues,
+    startVoiceInput: Boolean = false,
     requestPermission: (String) -> Unit,
     viewModel: ChatScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    val random = Random()
     lateinit var activity: ComponentActivity
     if (LocalContext.current is ComponentActivity) activity = LocalContext.current as ComponentActivity
 
@@ -81,10 +78,15 @@ fun ChatScreen(
     viewModel.sensorValues = sensorValues
     viewModel.requestPermission = requestPermission
 
-    val micReq = stringResource(id = R.string.microphone_access_required)
-
     val transitionState = remember { MutableTransitionState(false) }.apply { targetState = true }
     var showChat by remember { mutableStateOf(true) }
+
+    LaunchedEffect(startVoiceInput) {
+        if (startVoiceInput && !viewModel.isAssistantVoiceOver) {
+            viewModel.isAssistantVoiceOver = true
+            viewModel.startVoiceChatInput(activity)
+        }
+    }
 
     ChatNavigationDrawer(
         drawerState = drawerState,
@@ -109,19 +111,7 @@ fun ChatScreen(
                                 viewModel.sendChatInput { showSnackbar(it) }
                             },
                             onClickVoice = {
-                                if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_DENIED) {
-                                    Toast.makeText(
-                                        activity,
-                                        micReq,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    activity.requestPermissions(
-                                        arrayOf(Manifest.permission.RECORD_AUDIO),
-                                        random.nextInt(Int.MAX_VALUE)
-                                    )
-                                    return@ChatInput
-                                }
-                                viewModel.startVoiceChatInput()
+                                viewModel.startVoiceChatInput(activity)
                             }
                         )
                     }
@@ -410,11 +400,13 @@ fun ChatInput(
             ),
             keyboardActions = KeyboardActions { onClickSend() },
             trailingIcon = {
-                IconButton(
-                    onClick = onClickSend,
-                    enabled = enableButton,
-                ) {
-                    Icon(imageVector = Icons.Rounded.Send, contentDescription = "Send")
+                AnimatedVisibility(visible = inputText.isNotEmpty() && enableButton) {
+                    IconButton(
+                        onClick = onClickSend,
+                        enabled = enableButton,
+                    ) {
+                        Icon(imageVector = Icons.Rounded.Send, contentDescription = "Send")
+                    }
                 }
             }
         )

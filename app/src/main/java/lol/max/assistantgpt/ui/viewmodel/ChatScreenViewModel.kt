@@ -1,8 +1,11 @@
 package lol.max.assistantgpt.ui.viewmodel
 
+import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -192,7 +195,21 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun startVoiceChatInput() {
+    var isAssistantVoiceOver: Boolean = false
+    fun startVoiceChatInput(activity: Activity) {
+        if (getApplication<Application>().checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED) {
+            Toast.makeText(
+                getApplication(),
+                getApplication<Application>().getString(R.string.microphone_access_required),
+                Toast.LENGTH_SHORT
+            ).show()
+            activity.requestPermissions(
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                Random().nextInt(Int.MAX_VALUE)
+            )
+            return
+        }
+
         _uiState.update {
             it.copy(
                 enableButtons = false
