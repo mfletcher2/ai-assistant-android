@@ -117,17 +117,17 @@ class CalendarCreateEventRequest {
             .putExtra(
                 CalendarContract.EXTRA_EVENT_BEGIN_TIME,
                 Calendar.getInstance()
-                    .apply { set(startYear, startMonth, startDay, startHour, startMinute) }.timeInMillis
+                    .apply { set(startYear, startMonth - 1, startDay, startHour, startMinute) }.timeInMillis
             )
             .putExtra(
                 CalendarContract.EXTRA_EVENT_END_TIME,
-                Calendar.getInstance().apply { set(endYear, endMonth, endDay, endHour, endMinute) }.timeInMillis
+                Calendar.getInstance().apply { set(endYear, endMonth - 1, endDay, endHour, endMinute) }.timeInMillis
             )
             .putExtra(CalendarContract.Events.TITLE, title)
             .putExtra(CalendarContract.Events.DESCRIPTION, description)
             .putExtra(CalendarContract.Events.EVENT_LOCATION, location)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (intent.resolveActivity(context.packageManager) == null) return false
-
         context.startActivity(intent)
 
         return true
