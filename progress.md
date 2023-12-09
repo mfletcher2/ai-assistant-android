@@ -1,3 +1,9 @@
+### Week 4 (Dec. 4)
+Added functions for the assistant to access sensors. It currently supports the accelerometer, light, orientation, pressure, and step counter sensors. Also added functions for the assistant to get a list of apps and open one. Also also added functions for the assistant to get and create calendar events.
+<video height=700 controls>
+  <source src="videos/week4.webm" type="video/webm">
+</video>
+
 ### Week 3 (Nov. 27)
 Added weather (from the National Weather Service) and web searching (from Google) functions.
 <video height=700 controls>
