@@ -60,6 +60,26 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         .description("Play music. Returns true if the music was played successfully.")
         .executor(PlayMusicRequest::class.java) { it.playMusic(contextRef.get()) }
         .build()
+    private val cseChatFunction: ChatFunction = ChatFunction.builder()
+        .name("get_web_search")
+        .description(
+            "Search the web for a given query. You should use this if you are unsure of " +
+                    "the answer or need to fact-check something. Always cite the displayLink that you " +
+                    "used information from in your response."
+        )
+        .executor(CseAPI::class.java) { it.doSearch(it.query) }
+        .build()
+    private val nytTopStoriesFunction: ChatFunction = ChatFunction.builder()
+        .name("get_top_stories")
+        .description("Get the top stories from the New York Times.")
+        .executor(NYTTopStoriesAPI::class.java) { it.getTopStories(it.category) }
+        .build()
+    private val nytArticleSearchFunction: ChatFunction = ChatFunction.builder()
+        .name("get_article_search")
+        .description("Search the New York Times for a given query.")
+        .executor(NYTArticleSearchAPI::class.java) { it.getArticleSearch(it.query) }
+        .build()
+
 
     // functions that access sensors
     private val accelerometerChatFunction: ChatFunction = ChatFunction.builder()
@@ -92,6 +112,7 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         val allowedFunctions = listOf(
             cseChatFunction,
             weatherChatFunction,
+            weatherByLocationChatFunction,
             dateAndTimeChatFunction,
             nytTopStoriesFunction,
             nytArticleSearchFunction,

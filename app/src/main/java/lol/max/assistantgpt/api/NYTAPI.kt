@@ -3,7 +3,6 @@ package lol.max.assistantgpt.api
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
-import com.theokanning.openai.completion.chat.ChatFunction
 import lol.max.assistantgpt.BuildConfig
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -12,17 +11,6 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 import kotlin.math.min
-
-val nytTopStoriesFunction = ChatFunction.builder()
-    .name("get_top_stories")
-    .description("Get the top stories from the New York Times.")
-    .executor(NYTTopStoriesAPI::class.java) { it.getTopStories(it.category) }
-    .build()
-val nytArticleSearchFunction = ChatFunction.builder()
-    .name("get_article_search")
-    .description("Search the New York Times for a given query.")
-    .executor(NYTArticleSearchAPI::class.java) { it.getArticleSearch(it.query) }
-    .build()
 
 class NYTTopStoriesAPI {
     @JsonPropertyDescription("The category of stories to find. Available values are arts, automobiles, books/review, business, fashion, food, health, home, insider, magazine, movies, nyregion, obituaries, opinion, politics, realestate, science, sports, sundayreview, technology, theater, t-magazine, travel, upshot, us, and world. Defaults to home.")
