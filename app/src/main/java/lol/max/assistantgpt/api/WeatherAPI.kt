@@ -18,7 +18,7 @@ import retrofit2.http.Query
 import kotlin.concurrent.thread
 
 class WeatherAPI {
-    @JsonPropertyDescription("The location to get the weather for. It must at least specify the city and state. Example: New York, NY")
+    @JsonPropertyDescription("The address to get the weather for. It must at least specify the city and state. Example: New York, NY")
     @JsonProperty(required = true)
     lateinit var address: String
 
