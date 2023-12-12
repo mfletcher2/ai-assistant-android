@@ -71,8 +71,8 @@ fun ChatScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
-    fun showSnackbar(message: String) {
-        coroutineScope.launch { snackBarHostState.showSnackbar(message) }
+    val showSnackbar: (String) -> Unit = {
+        coroutineScope.launch { snackBarHostState.showSnackbar(it) }
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -86,7 +86,7 @@ fun ChatScreen(
     LaunchedEffect(startVoiceInput) {
         if (startVoiceInput && !viewModel.isAssistantVoiceOver) {
             viewModel.isAssistantVoiceOver = true
-            viewModel.startVoiceChatInput(activity)
+            viewModel.startVoiceChatInput(activity, showSnackbar)
         }
     }
 
@@ -110,10 +110,10 @@ fun ChatScreen(
                             onInputTextChanged = { viewModel.updateChatInput(it) },
                             enableButton = uiState.enableButtons,
                             onClickSend = {
-                                viewModel.sendChatInput { showSnackbar(it) }
+                                viewModel.sendChatInput(showSnackbar)
                             },
                             onClickVoice = {
-                                viewModel.startVoiceChatInput(activity)
+                                viewModel.startVoiceChatInput(activity, showSnackbar)
                             }
                         )
                     }

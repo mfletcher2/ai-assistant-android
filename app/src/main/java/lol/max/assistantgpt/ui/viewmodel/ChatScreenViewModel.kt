@@ -135,16 +135,6 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     var sensorValues = SensorValues()
     var requestPermission: (String) -> Unit = { }
 
-    init {
-        stt.setRecognitionListener(
-            RecognitionListener(
-                { updateChatInput(it) },
-                {
-                    endVoiceChatInput(it) { str -> speakText(str) }
-                })
-        )
-    }
-
     fun sendChatInput(
         showUserMessage: (String) -> Unit,
     ) {
@@ -196,7 +186,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     var isAssistantVoiceOver: Boolean = false
-    fun startVoiceChatInput(activity: Activity) {
+    fun startVoiceChatInput(activity: Activity, onFinished: (String) -> Unit) {
         if (getApplication<Application>().checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED) {
             Toast.makeText(
                 getApplication(),
@@ -209,6 +199,14 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
             )
             return
         }
+
+        stt.setRecognitionListener(
+            RecognitionListener(
+                { updateChatInput(it) },
+                {
+                    endVoiceChatInput(it, onFinished)
+                })
+        )
 
         _uiState.update {
             it.copy(
