@@ -19,9 +19,6 @@ class SetTimerRequest {
         val i = Intent(AlarmClock.ACTION_SET_TIMER)
         i.putExtra(AlarmClock.EXTRA_LENGTH, timeSeconds)
         if (message != "") i.putExtra(AlarmClock.EXTRA_MESSAGE, message)
-
-        if (i.resolveActivity(context.packageManager) == null) return false
-
         context.startActivity(i)
         return true
     }
@@ -45,9 +42,6 @@ class SetAlarmRequest {
         i.putExtra(AlarmClock.EXTRA_HOUR, hour)
         i.putExtra(AlarmClock.EXTRA_MINUTES, minute)
         if (message != "") i.putExtra(AlarmClock.EXTRA_MESSAGE, message)
-
-        if (i.resolveActivity(context.packageManager) == null) return false
-
         context.startActivity(i)
         return true
     }

@@ -43,9 +43,6 @@ class PackageRunRequest {
         if (context == null) return false
         val i = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         i.addCategory(Intent.CATEGORY_LAUNCHER)
-
-        if (i.resolveActivity(context.packageManager) == null) return false
-
         context.startActivity(i)
         return true
     }

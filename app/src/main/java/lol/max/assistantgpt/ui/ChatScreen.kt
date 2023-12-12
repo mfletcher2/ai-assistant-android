@@ -3,7 +3,6 @@ package lol.max.assistantgpt.ui
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.MutableTransitionState
@@ -304,12 +303,9 @@ fun MessageCard(msg: ChatMessage) {
                     linkColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     onLinkClicked = {
                         val intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = Uri.parse(it)
+                        intent.setData(Uri.parse(it))
                         Log.i("AssistantGPT", "Opening link: $it")
-                        if (intent.resolveActivity(context.packageManager) == null) {
-                            Toast.makeText(context, "No app found to open link.", Toast.LENGTH_SHORT).show()
-                            Log.e("AssistantGPT", "No app found to open $it")
-                        } else context.startActivity(intent)
+                        context.startActivity(intent)
                     }
                 )
             }
