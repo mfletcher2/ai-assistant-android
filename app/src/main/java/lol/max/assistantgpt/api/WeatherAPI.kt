@@ -123,7 +123,7 @@ interface NWSAPIService {
     ): Call<StationResult>
 }
 
-data class StationResult(val properties: Properties, val status: Int)
+data class StationResult(val properties: Properties)
 data class Properties(val gridX: Int, val gridY: Int, val cwa: String, val periods: List<Period>)
 data class Period(
     val name: String,
