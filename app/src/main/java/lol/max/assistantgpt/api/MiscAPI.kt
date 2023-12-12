@@ -115,6 +115,8 @@ class PlayMusicRequest {
         }
 
         try {
+            // do not show activity in foreground
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK.or(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             context.startActivity(intent)
         } catch (e: Exception) {
             return false
