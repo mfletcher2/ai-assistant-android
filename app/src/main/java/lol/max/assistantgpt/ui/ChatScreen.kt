@@ -303,7 +303,8 @@ fun MessageCard(msg: ChatMessage) {
                     linkColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     onLinkClicked = {
                         val intent = Intent(Intent.ACTION_VIEW)
-                        intent.setData(Uri.parse(it))
+                        val uri = if (it.startsWith("http")) Uri.parse(it) else Uri.parse("http://$it")
+                        intent.setData(uri)
                         Log.i("AssistantGPT", "Opening link: $it")
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)

@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.provider.MediaStore
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import retrofit2.Response
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -121,5 +123,14 @@ class PlayMusicRequest {
         }
         return true
     }
+}
+
+fun processError(response: Response<*>): String {
+    if (response.errorBody() != null) {
+        val error = response.errorBody()!!.string()
+        Log.e(null, "REST API error: $error")
+        return error
+    }
+    return "An error occurred."
 }
 

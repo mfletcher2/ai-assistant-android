@@ -49,9 +49,9 @@ class ChatAPI(
         requestPermission: (String) -> Unit,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
-        val messagesListCopy = ArrayList(chatMessages)
+        var messagesListCopy = ArrayList(chatMessages)
 
-        countTokensAndTruncate(
+        messagesListCopy = countTokensAndTruncate(
             messagesListCopy,
             encodingRegistry.getEncodingForModel(model.name).get(),
             model.maxTokens
@@ -134,8 +134,8 @@ class ChatAPI(
         list: ArrayList<ChatMessage>,
         encoding: Encoding,
         maxTokens: Int
-    ) {
-        val numTokens = tokensUsed + encoding.countTokens(list[list.size - 1].content)
+    ): ArrayList<ChatMessage> {
+        val numTokens = tokensUsed + encoding.countTokens(list.last().content)
         Log.i("ChatAPI", "Number of tokens: $numTokens")
         if (numTokens > maxTokens && list.size > 2) {
             Log.i("ChatAPI", "Too many tokens, truncating messages")
@@ -143,6 +143,7 @@ class ChatAPI(
             tokensUsed -= encoding.countTokens(list[1].content)
             countTokensAndTruncate(list, encoding, maxTokens)
         }
+        return list
     }
 
     fun setTimeoutSec(timeoutSec: Int) {
@@ -162,7 +163,7 @@ class ChatAPI(
 data class GPTModel(val name: String, val maxTokens: Int)
 
 val availableModels = listOf(
-    GPTModel("gpt-3.5-turbo", 3400),
-    GPTModel("gpt-4", 4096)
+    GPTModel("gpt-3.5-turbo", 3000),
+    GPTModel("gpt-4", 3000)
 )
 

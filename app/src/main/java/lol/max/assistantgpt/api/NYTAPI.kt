@@ -29,9 +29,9 @@ class NYTTopStoriesAPI {
 
     fun getTopStories(category: String = "home"): List<TopStoryResult> {
         val request = nytApiService.getTopStories(category, apiKey).execute()
-        return if (request.body() != null && request.body()!!.status == "OK")
+        return if (request.body() != null && request.code() == 200)
             request.body()!!.results.subList(0, min(10, request.body()!!.num_results))
-        else return listOf()
+        else return listOf(TopStoryResult(processError(request), "", "", "", "", ""))
     }
 }
 
@@ -53,8 +53,8 @@ class NYTArticleSearchAPI {
 
     fun getArticleSearch(query: String): List<Article> {
         val request = nytApiService.getArticleSearch(query, apiKey).execute()
-        return if (request.body() != null && request.body()!!.status == "OK") request.body()!!.response.docs
-        else listOf()
+        return if (request.body() != null && request.code() == 200) request.body()!!.response.docs
+        else listOf(Article(Headline(processError(request)), ByLine(""), "", "", "", ""))
     }
 }
 

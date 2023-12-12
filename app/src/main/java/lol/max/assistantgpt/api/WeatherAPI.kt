@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.api.chat.LateResponse
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -39,10 +39,8 @@ class WeatherAPI {
             "WeatherAPI",
             "Geocode service status code: ${latLonResponse.code()}: ${latLonResponse.message()}"
         )
-        if (latLonResponse.body()!!.status != "OK") {
-            Log.e("WeatherAPI", "Geocode service error: ${latLonResponse.body()!!.status}")
-            return listOf(Period("Error", 0, "", "Error", ""))
-        }
+        if (latLonResponse.code() != 200)
+            return listOf(Period(processError(latLonResponse), 0, "", "Error", ""))
 
         val latitude = latLonResponse.body()!!.results[0].geometry.location.lat
         val longitude = latLonResponse.body()!!.results[0].geometry.location.lng
@@ -64,13 +62,19 @@ class WeatherByLatLonRequest : LateResponse() {
 
     @SuppressLint("MissingPermission")
     fun getWeatherFromLocation(context: Context?) {
-        if (context == null)
+        if (context == null) {
             onSuccess("An error occurred.")
-        LocationServices.getFusedLocationProviderClient(context!!)
-            .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+            return
+        }
+
+        LocationServices.getFusedLocationProviderClient(context)
+            .lastLocation
             .addOnSuccessListener {
                 thread {
-                    onSuccess(getWeather(it.latitude.toFloat(), it.longitude.toFloat()))
+                    if (it == null)
+                        onSuccess("Unable to retrieve location.")
+                    else
+                        onSuccess(getWeather(it.latitude.toFloat(), it.longitude.toFloat()))
                 }
             }
     }
@@ -83,6 +87,9 @@ class WeatherByLatLonRequest : LateResponse() {
             "WeatherAPI",
             "Station service status code: ${stationResponse.code()}: ${stationResponse.message()}"
         )
+        if (stationResponse.code() != 200)
+            return listOf(Period(processError(stationResponse), 0, "", "", ""))
+
         val office = stationResponse.body()!!.properties.cwa
         val gridX = stationResponse.body()!!.properties.gridX
         val gridY = stationResponse.body()!!.properties.gridY
@@ -94,6 +101,9 @@ class WeatherByLatLonRequest : LateResponse() {
             "WeatherAPI",
             "Weather service status code: ${forecastResponse.code()}: ${forecastResponse.message()}"
         )
+        if (forecastResponse.code() != 200)
+            return listOf(Period(processError(forecastResponse), 0, "", "", ""))
+
         return forecastResponse.body()!!.properties.periods
     }
 }
@@ -113,7 +123,7 @@ interface NWSAPIService {
     ): Call<StationResult>
 }
 
-data class StationResult(val properties: Properties)
+data class StationResult(val properties: Properties, val status: Int)
 data class Properties(val gridX: Int, val gridY: Int, val cwa: String, val periods: List<Period>)
 data class Period(
     val name: String,
@@ -127,7 +137,7 @@ interface GoogleGeocodeService {
     @GET("geocode/json")
     fun getLatLon(
         @Query("address") address: String,
-        @Query("key") key: String = "AIzaSyDKMdWHQqBxRR_KUnikaEjTOuATHhCaTIU"
+        @Query("key") key: String = BuildConfig.GOOGLE_API_KEY
     ): Call<Results>
 }
 
