@@ -17,7 +17,7 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
         .build()
     private val launchPackageChatFunction = ChatFunction.builder()
         .name("launch_package")
-        .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether the launch was successful.")
+        .description("Launches the given package. Always confirm the package name first with get_apps_list(). Returns whether the launch was successful. Example: com.google.chrome")
         .executor(PackageRunRequest::class.java) { it.runPackage(contextRef.get()) }
         .build()
     private val dateAndTimeChatFunction = ChatFunction.builder()

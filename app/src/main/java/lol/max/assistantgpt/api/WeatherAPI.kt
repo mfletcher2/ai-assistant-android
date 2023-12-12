@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.api.chat.LateResponse
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -64,13 +65,19 @@ class WeatherByLatLonRequest : LateResponse() {
 
     @SuppressLint("MissingPermission")
     fun getWeatherFromLocation(context: Context?) {
-        if (context == null)
+        if (context == null) {
             onSuccess("An error occurred.")
-        LocationServices.getFusedLocationProviderClient(context!!)
+            return
+        }
+
+        LocationServices.getFusedLocationProviderClient(context)
             .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
             .addOnSuccessListener {
                 thread {
-                    onSuccess(getWeather(it.latitude.toFloat(), it.longitude.toFloat()))
+                    if (it == null)
+                        onSuccess("Unable to retrieve location.")
+                    else
+                        onSuccess(getWeather(it.latitude.toFloat(), it.longitude.toFloat()))
                 }
             }
     }
@@ -127,7 +134,7 @@ interface GoogleGeocodeService {
     @GET("geocode/json")
     fun getLatLon(
         @Query("address") address: String,
-        @Query("key") key: String = "AIzaSyDKMdWHQqBxRR_KUnikaEjTOuATHhCaTIU"
+        @Query("key") key: String = BuildConfig.GOOGLE_API_KEY
     ): Call<Results>
 }
 
