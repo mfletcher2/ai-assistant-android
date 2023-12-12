@@ -329,7 +329,7 @@ fun Conversation(
             listState.animateScrollToItem(messages.size - 1)
         }
     LazyColumn(state = listState) {
-        itemsIndexed(messages) { i, message ->
+        items(messages.size) { i ->
             val state = remember {
                 MutableTransitionState(i != messages.size - 1 || isAnimated()).apply {
                     // Start the animation immediately.
@@ -337,14 +337,14 @@ fun Conversation(
                 }
             }
 
-            if (message.content != null &&
-                (message.role == ChatMessageRole.ASSISTANT.value() || message.role == ChatMessageRole.USER.value()
-                        || (message.role == ChatMessageRole.FUNCTION.value() && showFunctions))
+            if (i < messages.size && messages[i].content != null &&
+                (messages[i].role == ChatMessageRole.ASSISTANT.value() || messages[i].role == ChatMessageRole.USER.value()
+                        || (messages[i].role == ChatMessageRole.FUNCTION.value() && showFunctions))
             ) {
                 AnimatedVisibility(
                     visibleState = state,
                     enter = fadeIn() + slideInVertically(spring(stiffness = StiffnessMediumLow)) { it }) {
-                    MessageCard(msg = message)
+                    MessageCard(msg = messages[i])
                 }
             }
 
@@ -385,7 +385,6 @@ fun ChatInput(
         OutlinedTextField(
             value = inputText,
             onValueChange = { if (enableButton) onInputTextChanged(it) },
-            colors = TextFieldDefaults.textFieldColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier
                 .weight(1f)
                 .padding(8.dp)
@@ -447,14 +446,15 @@ fun ChatTopAppBar(
                 targetState = title,
                 label = "title",
                 transitionSpec = {
-                    (slideInHorizontally(spring(DampingRatioMediumBouncy)) { width -> -width } + fadeIn() with slideOutHorizontally { width -> width } + fadeOut()) using SizeTransform(
+                    ((slideInHorizontally(spring(DampingRatioMediumBouncy)) { width -> -width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> width } + fadeOut())) using SizeTransform(
                         false
                     )
                 }) { newTitle ->
                 Text(text = newTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         },
-        colors = TopAppBarDefaults.smallTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primary,
             titleContentColor = MaterialTheme.colorScheme.onPrimary
         ), actions = {
@@ -467,7 +467,7 @@ fun ChatTopAppBar(
                     )
                 }
             AnimatedContent(
-                targetState = newChat, transitionSpec = { fadeIn() + scaleIn() with fadeOut() + scaleOut() },
+                targetState = newChat, transitionSpec = { (fadeIn() + scaleIn()).togetherWith(fadeOut() + scaleOut()) },
                 label = "Save button"
             ) {
                 IconButton(onClick = { if (it) onSave() else onDelete() }, enabled = enableButton) {

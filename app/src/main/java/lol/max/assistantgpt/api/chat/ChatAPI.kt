@@ -102,11 +102,6 @@ class ChatAPI(
                         )
                         messagesListCopy.add(it)
                         updateChatMessageList(messagesListCopy)
-                        countTokensAndTruncate(
-                            messagesListCopy,
-                            encodingRegistry.getEncodingForModel(model.name).get(),
-                            model.maxTokens
-                        )
                         getCompletion(
                             chatMessages = messagesListCopy,
                             model = model,
@@ -142,7 +137,7 @@ class ChatAPI(
     ) {
         val numTokens = tokensUsed + encoding.countTokens(list[list.size - 1].content)
         Log.i("ChatAPI", "Number of tokens: $numTokens")
-        if (numTokens > maxTokens && list.size > 1) {
+        if (numTokens > maxTokens && list.size > 2) {
             Log.i("ChatAPI", "Too many tokens, truncating messages")
             list.removeAt(1)
             tokensUsed -= encoding.countTokens(list[1].content)
