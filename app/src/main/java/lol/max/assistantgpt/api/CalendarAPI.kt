@@ -126,7 +126,7 @@ class CalendarCreateEventRequest {
             .putExtra(CalendarContract.Events.TITLE, title)
             .putExtra(CalendarContract.Events.DESCRIPTION, description)
             .putExtra(CalendarContract.Events.EVENT_LOCATION, location)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
 
         return true

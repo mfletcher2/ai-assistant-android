@@ -43,6 +43,7 @@ class PackageRunRequest {
         if (context == null) return false
         val i = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         i.addCategory(Intent.CATEGORY_LAUNCHER)
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(i)
         return true
     }
@@ -113,7 +114,7 @@ class PlayMusicRequest {
 
         try {
             // do not show activity in foreground
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK.or(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK.or(Intent.FLAG_ACTIVITY_CLEAR_TOP))
             context.startActivity(intent)
         } catch (e: Exception) {
             return false

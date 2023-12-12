@@ -305,6 +305,7 @@ fun MessageCard(msg: ChatMessage) {
                         val intent = Intent(Intent.ACTION_VIEW)
                         intent.setData(Uri.parse(it))
                         Log.i("AssistantGPT", "Opening link: $it")
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
                     }
                 )
