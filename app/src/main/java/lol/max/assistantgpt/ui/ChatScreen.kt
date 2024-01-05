@@ -187,7 +187,7 @@ fun ChatScreen(
             viewModel.updateShowDialog(
                 DialogTypes.NONE
             )
-        }, { viewModel.updateTimeoutSec(); viewModel.saveSharedPreferences() })
+        }, { viewModel.saveSharedPreferences() })
 
         DialogTypes.INFO -> InfoDialog { viewModel.updateShowDialog(DialogTypes.NONE) }
         DialogTypes.VOICE -> Dialog(onDismissRequest = {

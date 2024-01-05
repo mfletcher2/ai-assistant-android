@@ -19,21 +19,7 @@ import java.time.Duration
 import kotlin.concurrent.thread
 
 
-class ChatAPI(
-    private var apiKey: String,
-    private var timeoutSec: Int = 60,
-) {
-    private var mapper: ObjectMapper = defaultObjectMapper()
-    private var client: OkHttpClient =
-        defaultClient(apiKey, Duration.ofSeconds(timeoutSec.toLong()))
-            .newBuilder()
-            .build()
-    private var retrofit: Retrofit = defaultRetrofit(client, mapper)
-
-    private var api: OpenAiApi = retrofit.create(OpenAiApi::class.java)
-    private var service: OpenAiService = OpenAiService(api)
-
-    private var encodingRegistry = Encodings.newLazyEncodingRegistry()
+class ChatAPI {
 
     var tokensUsed: Long = 0
 
@@ -46,9 +32,25 @@ class ChatAPI(
         sensorValues: SensorValues,
         showMessage: (String) -> Unit,
         showFunctions: Boolean,
+        apiKey: String,
+        googleKey: String,
+        timeoutSec: Int,
         requestPermission: (String) -> Unit,
         updateChatMessageList: (ArrayList<ChatMessage>) -> Unit
     ) {
+        val mapper: ObjectMapper = defaultObjectMapper()
+        val client: OkHttpClient =
+            defaultClient(apiKey, Duration.ofSeconds(timeoutSec.toLong()))
+                .newBuilder()
+                .build()
+        val retrofit: Retrofit = defaultRetrofit(client, mapper)
+
+        val api: OpenAiApi = retrofit.create(OpenAiApi::class.java)
+        val service = OpenAiService(api)
+
+        val encodingRegistry = Encodings.newLazyEncodingRegistry()
+
+
         var messagesListCopy = ArrayList(chatMessages)
 
         messagesListCopy = countTokensAndTruncate(
@@ -57,7 +59,7 @@ class ChatAPI(
             model.maxTokens
         )
 
-        val chatFunctions = ChatFunctions(context, sensorValues)
+        val chatFunctions = ChatFunctions(context, sensorValues, googleKey)
         val functionExecutor = FunctionExecutor(chatFunctions.getFunctionList(allowSensors))
 
         val chatCompletionRequest = ChatCompletionRequest.builder()
@@ -110,6 +112,9 @@ class ChatAPI(
                             sensorRequest = sensorRequest,
                             sensorValues = sensorValues,
                             showMessage = showMessage,
+                            apiKey = apiKey,
+                            googleKey = googleKey,
+                            timeoutSec = timeoutSec,
                             requestPermission = requestPermission,
                             showFunctions = showFunctions,
                             updateChatMessageList = updateChatMessageList
@@ -144,19 +149,6 @@ class ChatAPI(
             countTokensAndTruncate(list, encoding, maxTokens)
         }
         return list
-    }
-
-    fun setTimeoutSec(timeoutSec: Int) {
-        if (timeoutSec != this.timeoutSec) {
-            this.timeoutSec = timeoutSec
-            client = defaultClient(apiKey, Duration.ofSeconds(timeoutSec.toLong()))
-                .newBuilder()
-                .build()
-            retrofit = defaultRetrofit(client, mapper)
-
-            api = retrofit.create(OpenAiApi::class.java)
-            service = OpenAiService(api)
-        }
     }
 }
 

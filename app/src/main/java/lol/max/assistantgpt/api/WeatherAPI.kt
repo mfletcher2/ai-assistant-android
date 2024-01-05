@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.google.android.gms.location.LocationServices
-import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.api.chat.LateResponse
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -30,10 +29,10 @@ class WeatherAPI {
     @JsonIgnore
     private val googleGeocodeService = retrofitGoogle.create(GoogleGeocodeService::class.java)
 
-    fun getWeather(address: String): List<Period> {
-        val latLonRequest = googleGeocodeService.getLatLon(address).request()
+    fun getWeather(address: String, googleKey: String): List<Period> {
+        val latLonRequest = googleGeocodeService.getLatLon(address, googleKey).request()
         Log.i("WeatherAPI", "Doing geocode request: ${latLonRequest.url}")
-        val latLonResponse = googleGeocodeService.getLatLon(address).execute()
+        val latLonResponse = googleGeocodeService.getLatLon(address, googleKey).execute()
 
         Log.i(
             "WeatherAPI",
@@ -137,7 +136,7 @@ interface GoogleGeocodeService {
     @GET("geocode/json")
     fun getLatLon(
         @Query("address") address: String,
-        @Query("key") key: String = BuildConfig.GOOGLE_API_KEY
+        @Query("key") key: String
     ): Call<Results>
 }
 

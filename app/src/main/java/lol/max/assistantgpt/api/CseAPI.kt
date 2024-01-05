@@ -17,9 +17,6 @@ class CseAPI {
     lateinit var query: String
 
     @JsonIgnore
-    private val key: String = BuildConfig.GOOGLE_API_KEY
-
-    @JsonIgnore
     private val pseId: String = BuildConfig.GOOGLE_SEARCH_ID
 
     @JsonIgnore
@@ -30,7 +27,7 @@ class CseAPI {
     @JsonIgnore
     private val googleCseService = retrofit.create(GoogleCseService::class.java)
 
-    fun doSearch(query: String): List<Result> {
+    fun doSearch(query: String, key: String): List<Result> {
         val response = googleCseService.getSearch(
             key,
             pseId,

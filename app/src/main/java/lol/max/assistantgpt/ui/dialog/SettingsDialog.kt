@@ -32,6 +32,8 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
     var timeoutSec by rememberSaveable { mutableStateOf(options.timeoutSec.toString()) }
     var allowSensors by rememberSaveable { mutableStateOf(options.allowSensors) }
     var confirmSensors by rememberSaveable { mutableStateOf(options.confirmSensors) }
+    var openaiKey by rememberSaveable { mutableStateOf(options.openAiKey) }
+    var googleKey by rememberSaveable { mutableStateOf(options.googleKey) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
@@ -47,6 +49,8 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                     options.allowSensors = allowSensors
                     options.confirmSensors = confirmSensors
                     options.showFunctions = showFunctions
+                    options.openAiKey = openaiKey
+                    options.googleKey = googleKey
                     onSaveRequest()
                     onDismissRequest()
                 },
@@ -69,6 +73,22 @@ fun SettingsDialog(options: Options, onDismissRequest: () -> Unit, onSaveRequest
                 }
                 item {
                     Text(text = stringResource(R.string.api))
+                }
+                item {
+                    TextField(
+                        value = openaiKey, onValueChange = { openaiKey = it },
+                        label = { Text(text = "OpenAI API Key (required)") },
+                        singleLine = true,
+                        modifier = Modifier.padding(16.dp, 8.dp)
+                    )
+                }
+                item {
+                    TextField(
+                        value = googleKey, onValueChange = { googleKey = it },
+                        label = { Text(text = "Google API Key") },
+                        singleLine = true,
+                        modifier = Modifier.padding(16.dp, 8.dp)
+                    )
                 }
                 item {
                     OptionsItem(

@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import lol.max.assistantgpt.BuildConfig
 import lol.max.assistantgpt.R
 import lol.max.assistantgpt.api.SensorValues
 import lol.max.assistantgpt.api.chat.ChatAPI
@@ -97,7 +96,7 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         return temp
     }
 
-    private val chatApi = ChatAPI(BuildConfig.OPENAI_API_KEY, options.timeoutSec)
+    private val chatApi = ChatAPI()
 
     var chatInput by mutableStateOf("")
         private set
@@ -135,6 +134,11 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
     var sensorValues = SensorValues()
     var requestPermission: (String) -> Unit = { }
 
+    init {
+        if (options.openAiKey.isEmpty())
+            Toast.makeText(application, "Please enter your OpenAI API key in the settings.", Toast.LENGTH_LONG).show()
+    }
+
     fun sendChatInput(
         showUserMessage: (String) -> Unit,
     ) {
@@ -161,6 +165,9 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
                 sensorValues = sensorValues,
                 showFunctions = options.showFunctions,
                 showMessage = showUserMessage,
+                apiKey = options.openAiKey,
+                googleKey = options.googleKey,
+                timeoutSec = options.timeoutSec,
                 requestPermission = requestPermission,
                 updateChatMessageList = { list ->
                     newMessageAnimated = false
@@ -270,10 +277,6 @@ class ChatScreenViewModel(application: Application) : AndroidViewModel(applicati
         e.putBoolean("confirmSensors", options.confirmSensors)
         e.putBoolean("showFunctions", options.showFunctions)
         e.apply()
-    }
-
-    fun updateTimeoutSec() {
-        chatApi.setTimeoutSec(options.timeoutSec)
     }
 
     fun saveChat(name: String = "") {

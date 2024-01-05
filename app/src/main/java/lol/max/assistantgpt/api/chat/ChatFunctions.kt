@@ -7,7 +7,7 @@ import com.theokanning.openai.completion.chat.ChatFunction
 import lol.max.assistantgpt.api.*
 import java.lang.ref.WeakReference
 
-class ChatFunctions(context: Context, sensorValues: SensorValues) {
+class ChatFunctions(context: Context, sensorValues: SensorValues, googleKey: String) {
     private val contextRef = WeakReference(context)
 
     private val appsListChatFunction = ChatFunction.builder()
@@ -28,7 +28,7 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
     private val weatherChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_weather")
         .description("Get the weather forecast for a location in the United States.")
-        .executor(WeatherAPI::class.java) { it.getWeather(it.address) }
+        .executor(WeatherAPI::class.java) { it.getWeather(it.address, googleKey) }
         .build()
     private val weatherByLocationChatFunction: ChatFunction = ChatFunction.builder()
         .name("get_weather_current_location")
@@ -67,7 +67,7 @@ class ChatFunctions(context: Context, sensorValues: SensorValues) {
                     "the answer or need to fact-check something. Always cite the displayLink that you " +
                     "used information from in your response."
         )
-        .executor(CseAPI::class.java) { it.doSearch(it.query) }
+        .executor(CseAPI::class.java) { it.doSearch(it.query, googleKey) }
         .build()
     private val nytTopStoriesFunction: ChatFunction = ChatFunction.builder()
         .name("get_top_stories")

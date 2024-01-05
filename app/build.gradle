@@ -36,14 +36,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField("String", "OPENAI_API_KEY", "\"${keystoreProperties['OPENAI_API_KEY']}\"")
-            buildConfigField("String", "GOOGLE_API_KEY", "\"${keystoreProperties['GOOGLE_API_KEY']}\"")
             buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${keystoreProperties['GOOGLE_SEARCH_ID']}\"")
             buildConfigField("String", "NYT_API_KEY", "\"${keystoreProperties['NYT_API_KEY']}\"")
         }
         debug {
-            buildConfigField("String", "OPENAI_API_KEY", "\"${keystoreProperties['OPENAI_API_KEY']}\"")
-            buildConfigField("String", "GOOGLE_API_KEY", "\"${keystoreProperties['GOOGLE_API_KEY']}\"")
             buildConfigField("String", "GOOGLE_SEARCH_ID", "\"${keystoreProperties['GOOGLE_SEARCH_ID']}\"")
             buildConfigField("String", "NYT_API_KEY", "\"${keystoreProperties['NYT_API_KEY']}\"")
         }
